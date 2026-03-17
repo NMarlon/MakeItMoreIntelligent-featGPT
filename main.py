@@ -9,6 +9,11 @@ NUM_PITS = 3  # número de poços (obstáculos/perigo)
 # Direções: 0=North,1=East,2=South,3=West
 DIRECTION_LABELS = ['N', 'E', 'S', 'W']
 MOVES = {0: (-1, 0), 1: (0, 1), 2: (1, 0), 3: (0, -1)}
+BOT_ICON = {0: '^', 1: '>', 2: 'v', 3: '<'}
+
+# Cores ANSI para terminal
+ANSI_YELLOW = '\x1b[93m'
+ANSI_RESET = '\x1b[0m'
 
 # Configurações do monstro
 MONSTER_CAN_MOVE = True  # true/false para controlar se o monstro se move
@@ -133,9 +138,60 @@ class Dungeon:
             'pits': set(pits),
             'done': False,
             'reason': None,
+            'apples_collected': 0,
         }
 
+    def spawn_apple(self):
+        occupied = {self.state['bot'].position, self.state['monster']} | self.state['pits']
+        empty = [(r, c) for r in range(self.rows) for c in range(self.cols) if (r, c) not in occupied]
+        if not empty:
+            return
+        self.state['apple'] = random.choice(empty)
+
+    def bot_vision(self):
+        bot = self.state['bot']
+        r, c = bot.position
+        fov = []
+        if bot.direction == 0:  # norte
+            fov = [(r-1, c), (r-1, c-1), (r-1, c+1), (r-2, c), (r-2, c-1), (r-2, c+1)]
+        elif bot.direction == 1:  # leste
+            fov = [(r, c+1), (r-1, c+1), (r+1, c+1), (r, c+2), (r-1, c+2), (r+1, c+2)]
+        elif bot.direction == 2:  # sul
+            fov = [(r+1, c), (r+1, c-1), (r+1, c+1), (r+2, c), (r+2, c-1), (r+2, c+1)]
+        else:  # oeste
+            fov = [(r, c-1), (r-1, c-1), (r+1, c-1), (r, c-2), (r-1, c-2), (r+1, c-2)]
+        visible = set()
+        for nr, nc in fov:
+            if 0 <= nr < self.rows and 0 <= nc < self.cols:
+                visible.add((nr, nc))
+        return visible
+
     def render(self):
+        d = self.state
+        visible = self.bot_vision()
+        lines = ['Dungeon (B=bot, M=monstro, A=maçã, X=poço, .=vazio)']
+        lines.append('+' + '---+' * self.cols)
+        for r in range(self.rows):
+            row_chars = []
+            for c in range(self.cols):
+                pos = (r, c)
+                if pos == d['bot'].position:
+                    cell = f' {BOT_ICON[d["bot"].direction]} '
+                elif pos == d['monster']:
+                    cell = ' M '
+                elif pos == d['apple']:
+                    cell = ' A '
+                elif pos in d['pits']:
+                    cell = ' X '
+                else:
+                    cell = ' . '
+                if pos in visible and pos != d['bot'].position:
+                    cell = f'{ANSI_YELLOW}{cell}{ANSI_RESET}'
+                row_chars.append(cell)
+            lines.append('|' + '|'.join(row_chars) + '|')
+            lines.append('+' + '---+' * self.cols)
+        return '\n'.join(lines)
+
         d = self.state
         lines = ['Dungeon (B=bot, M=monstro, A=maçã, X=poço, .=vazio)']
         lines.append('+' + '---+' * self.cols)
@@ -196,7 +252,9 @@ class Dungeon:
             if self.state['apple'] is not None and bot.position == self.state['apple']:
                 bot.inventory['apple'] = True
                 self.state['apple'] = None
+                self.state['apples_collected'] += 1
                 reward = 50
+                self.spawn_apple()
             else:
                 reward = -5
         else:
@@ -217,10 +275,6 @@ class Dungeon:
             self.state['done'] = True
             self.state['reason'] = 'poço'
             reward = -100
-        elif self.state['apple'] is None and bot.inventory.get('apple', False):
-            self.state['done'] = True
-            self.state['reason'] = 'maçã_coletada'
-            reward = 100
 
         bot.score += reward
         return {
@@ -238,7 +292,7 @@ def print_status(dungeon):
     print(f"Posição: {p['position']} | Direção: {p['direction']} | Alive: {p['alive']}")
     print(f"Sensações: monstro próximo={p['near_monster']} poço próximo={p['near_pit']} maçã próxima={p['near_apple']}")
     print(f"No chão: maçã={p['on_apple']} monstro={p['on_monster']} poço={p['on_pit']}")
-    print(f"Inventário: {dungeon.state['bot'].inventory} | Score: {dungeon.state['bot'].score}")
+    print(f"Inventário: {dungeon.state['bot'].inventory} | Score: {dungeon.state['bot'].score} | Maçãs colhidas: {dungeon.state['apples_collected']}")
 
 
 def main():
