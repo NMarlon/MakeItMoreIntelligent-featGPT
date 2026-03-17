@@ -19,6 +19,11 @@ ANSI_RESET = '\x1b[0m'
 MONSTER_CAN_MOVE = True  # true/false para controlar se o monstro se move
 MONSTER_ASTAR_PROB = 0.3  # probabilidade de usar A* para seguir o bot (0.0 a 1.0)
 
+# Fome (valores ajustáveis)
+MAX_HUNGER = 250
+HUNGER_LOSS_PER_TURN = 1
+APPLE_HUNGER_RECOVERY = 150
+
 
 def clamp_pos(pos, rows, cols):
     r, c = pos
@@ -139,6 +144,7 @@ class Dungeon:
             'done': False,
             'reason': None,
             'apples_collected': 0,
+            'hunger': MAX_HUNGER,
         }
 
     def spawn_apple(self):
@@ -240,6 +246,22 @@ class Dungeon:
         bot = self.state['bot']
         reward = -1
 
+        # perda de fome a cada turno
+        self.state['hunger'] -= HUNGER_LOSS_PER_TURN
+        if self.state['hunger'] <= 0:
+            bot.alive = False
+            self.state['done'] = True
+            self.state['reason'] = 'morreu_fome'
+            reward = -100
+            bot.score += reward
+            return {
+                'status': 'ok',
+                'reward': reward,
+                'done': self.state['done'],
+                'reason': self.state['reason'],
+                'perception': self.perception(),
+            }
+
         if action == 'avancar':
             bot.move_forward(self.rows, self.cols)
         elif action == 'virar_esquerda':
@@ -253,6 +275,7 @@ class Dungeon:
                 bot.inventory['apple'] = True
                 self.state['apple'] = None
                 self.state['apples_collected'] += 1
+                self.state['hunger'] = min(MAX_HUNGER, self.state['hunger'] + APPLE_HUNGER_RECOVERY)
                 reward = 50
                 self.spawn_apple()
             else:
@@ -289,7 +312,7 @@ class Dungeon:
 def print_status(dungeon):
     print(dungeon.render())
     p = dungeon.perception()
-    print(f"Posição: {p['position']} | Direção: {p['direction']} | Alive: {p['alive']}")
+    print(f"Posição: {p['position']} | Direção: {p['direction']} | Fome: {dungeon.state['hunger']}/{MAX_HUNGER} | Alive: {p['alive']}")
     print(f"Sensações: monstro próximo={p['near_monster']} poço próximo={p['near_pit']} maçã próxima={p['near_apple']}")
     print(f"No chão: maçã={p['on_apple']} monstro={p['on_monster']} poço={p['on_pit']}")
     print(f"Inventário: {dungeon.state['bot'].inventory} | Score: {dungeon.state['bot'].score} | Maçãs colhidas: {dungeon.state['apples_collected']}")
