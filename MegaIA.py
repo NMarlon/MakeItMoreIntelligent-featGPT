@@ -255,7 +255,7 @@ class MegaCore:
         return score
 
 
-def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200):
+def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200, post_train_turns=10, interactive=True):
     core = MegaCore()
     print('=== MegaIA - Treino (30 vidas rápidas) + depois simulação detalhada ===\n')
 
@@ -288,36 +288,71 @@ def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200):
 
     print("\nTreino concluído! Agora rodando simulação detalhada turno a turno...\n")
 
+    cycle = 0
+    total_turns = 0
     dungeon = Dungeon()
-    turn = 0
-    while not dungeon.state['done'] and turn < max_turns:
-        turn += 1
-        core.turn += 1
-        p = dungeon.perception()
-        action = core.choose_action(p, dungeon.state['bot'].position, dungeon.state['bot'].direction, dungeon)
+    while True:
+        cycle += 1
+        print(f"\n=== Simulação pós-treino: ciclo {cycle}, até {post_train_turns} turnos ===")
+        for turn in range(1, post_train_turns + 1):
+            if dungeon.state['done']:
+                break
+            total_turns += 1
+            core.turn += 1
+            p = dungeon.perception()
+            action = core.choose_action(p, dungeon.state['bot'].position, dungeon.state['bot'].direction, dungeon)
 
-        print(f"\nTurno {turn:3d} | MegaIA escolheu: {action} | Identidade: {core.identity}")
-        print(dungeon.render())
-        print_status(dungeon)
+            print(f"\nTurno {total_turns:3d} | MegaIA escolheu: {action} | Identidade: {core.identity}")
+            print(dungeon.render())
+            print_status(dungeon)
 
-        result = dungeon.step(action)
+            result = dungeon.step(action)
+            if result.get('reason'):
+                core._record_event(f"morreu_{result['reason']}", {'position': p['position'], 'turn': core.turn})
+            if result['reward'] > 0:
+                core._record_event('recompensa', {'reward': result['reward'], 'turn': core.turn})
 
-        if result.get('reason'):
-            core._record_event(f"morreu_{result['reason']}", {'position': p['position'], 'turn': core.turn})
-        if result['reward'] > 0:
-            core._record_event('recompensa', {'reward': result['reward'], 'turn': core.turn})
+            if 'visible_items' in p:
+                for pos, item in p['visible_items'].items():
+                    rel = item['relative']
+                    core.update_sensory_truth(rel, item['symbol'], result['reward'], result.get('reason'))
 
-        if 'visible_items' in p:
-            for pos, item in p['visible_items'].items():
-                rel = item['relative']
-                core.update_sensory_truth(rel, item['symbol'], result['reward'], result.get('reason'))
+            if dungeon.state['done']:
+                print(f"\nFim da simulação! Razão: {dungeon.state.get('reason', 'desconhecida')}")
+                print(f"Maçãs finais: {dungeon.state['apples_collected']} | Score final: {dungeon.state['bot'].score}")
+                break
 
+        # Se o mapa foi finalizado durante o ciclo e ainda estiver done, pergunte para continuar ou sair
         if dungeon.state['done']:
-            print(f"\nFim da simulação! Razão: {dungeon.state.get('reason', 'desconhecida')}")
-            print(f"Maçãs finais: {dungeon.state['apples_collected']} | Score final: {dungeon.state['bot'].score}")
+            if not interactive:
+                print("\nModo não interativo: encerrando após morte/fim de mapa.")
+                break
+            escolha_fim = input("Mapa finalizado. [R]einiciar, [C]ontinuar mesmo mapa, [S]air: ").strip().lower()
+            if escolha_fim in ['s', 'sair', 'q', 'quit']:
+                print("Encerrando simulação por escolha do usuário.")
+                break
+            if escolha_fim in ['r', 'reiniciar', 'novo', 'mapa', 'n']:
+                dungeon = Dungeon()
+                print("Reiniciando em novo mapa automático...")
+                continue
+            print("Continuando o mesmo mapa por mais um ciclo...")
 
-    if turn >= max_turns:
-        print("\nLimite de turnos atingido. MegaIA sobreviveu muito tempo!")
+        print(f"\nCiclo concluído ({post_train_turns} turnos). Total de turnos: {total_turns}.")
+
+        if not interactive:
+            print("Modo não interativo: encerrando após o ciclo de simulação.")
+            break
+
+        escolha = input("Escolha: [C]ontinuar mesmo mapa, [R]einiciar mapa automático, [S]air: ").strip().lower()
+        if escolha in ['s', 'sair', 'q', 'quit']:
+            print("Encerrando simulação por escolha do usuário.")
+            break
+        if escolha in ['r', 'reiniciar', 'mapa', 'novo', 'n']:
+            dungeon = Dungeon()
+            print("Reiniciando em novo mapa automático...")
+            continue
+        # default: continuar mesmo mapa
+        print("Continuando o mesmo mapa por mais um ciclo...")
 
     core.finalizar_vida()
     print("Simulação terminada. Memória salva para a próxima execução.")
