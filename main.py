@@ -33,6 +33,10 @@ ATTACK_PENALTY = -10
 MONSTER_RESPAWN_TURNS = 2  # espera após morte para respawn
 MONSTER_RESPAWN_PER_TURN = 1  # quantos monstros aparecem por turno
 
+# Respawn do bot e vidas
+BOT_INITIAL_LIVES = 3  # 0 = infinitas
+BOT_RESPAWN_MAP_POLICY = 'same'  # 'same', 'random', 'choice'
+
 
 def clamp_pos(pos, rows, cols):
     r, c = pos
@@ -169,7 +173,43 @@ class Dungeon:
             'apples_collected': 0,
             'hunger': MAX_HUNGER,
             'monster_respawn_timer': 0,
+            'deaths': 0,
+            'remaining_lives': BOT_INITIAL_LIVES,
         }
+
+    def choose_respawn_map(self):
+        if BOT_RESPAWN_MAP_POLICY == 'random':
+            return 'random'
+        if BOT_RESPAWN_MAP_POLICY == 'choice':
+            return random.choice(['same', 'random'])
+        return 'same'
+
+    def random_empty_position(self):
+        occupied = {self.state['bot'].position} | self.state['monsters'] | self.state['pits']
+        if self.state['apple'] is not None:
+            occupied.add(self.state['apple'])
+        empties = [(r, c) for r in range(self.rows) for c in range(self.cols) if (r, c) not in occupied]
+        if not empties:
+            return self.state['bot'].position
+        return random.choice(empties)
+
+    def respawn_bot(self):
+        policy = self.choose_respawn_map()
+        if policy == 'random':
+            old_deaths = self.state.get('deaths', 0)
+            old_lives = self.state.get('remaining_lives', BOT_INITIAL_LIVES)
+            self.state = self.create_random()
+            self.state['deaths'] = old_deaths
+            self.state['remaining_lives'] = old_lives
+            return
+        # same map: bot in random empty cell
+        bot = self.state['bot']
+        bot.position = self.random_empty_position()
+        bot.direction = 0
+        bot.alive = True
+        bot.score = bot.score  # keep score
+        bot.inventory = {'apple': False}
+        self.state['hunger'] = MAX_HUNGER
 
     def spawn_apple(self):
         occupied = {self.state['bot'].position} | self.state['monsters'] | self.state['pits']
