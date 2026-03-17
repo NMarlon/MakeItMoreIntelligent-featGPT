@@ -24,6 +24,11 @@ MAX_HUNGER = 250
 HUNGER_LOSS_PER_TURN = 1
 APPLE_HUNGER_RECOVERY = 150
 
+# Ataque do bot
+BOT_CAN_ATTACK = True  # true/false para permitir o ataque
+ATTACK_REWARD = 80
+ATTACK_PENALTY = -10
+
 
 def clamp_pos(pos, rows, cols):
     r, c = pos
@@ -54,6 +59,10 @@ class Bot:
         new_pos = clamp_pos(new_pos, rows, cols)
         self.position = new_pos
         return 'avancar'
+
+    def attack_forward(self):
+        dr, dc = MOVES[self.direction]
+        return (self.position[0] + dr, self.position[1] + dc)
 
 
 class Dungeon:
@@ -109,6 +118,8 @@ class Dungeon:
 
     def move_monster(self):
         if not self.monster_can_move or self.state['done']:
+            return
+        if self.state['monster'] is None:
             return
 
         monster_pos = self.state['monster']
@@ -280,6 +291,16 @@ class Dungeon:
                 self.spawn_apple()
             else:
                 reward = -5
+        elif action == 'atacar':
+            if not BOT_CAN_ATTACK:
+                reward = -5
+            else:
+                target = bot.attack_forward()
+                if target == self.state['monster']:
+                    self.state['monster'] = None
+                    reward = ATTACK_REWARD
+                else:
+                    reward = ATTACK_PENALTY
         else:
             reward = -5
 
@@ -288,7 +309,7 @@ class Dungeon:
             self.move_monster()
 
         # Verificação de eventos após ações do bot e do monstro
-        if bot.position == self.state['monster']:
+        if self.state['monster'] is not None and bot.position == self.state['monster']:
             bot.alive = False
             self.state['done'] = True
             self.state['reason'] = 'monstro'
@@ -327,7 +348,7 @@ def main():
         cmd = input('Ação (avancar/virar_esquerda/virar_direita/pegar/quit): ').strip().lower()
         if cmd == 'quit':
             break
-        if cmd not in ('avancar', 'virar_esquerda', 'virar_direita', 'pegar'):
+        if cmd not in ('avancar', 'virar_esquerda', 'virar_direita', 'pegar', 'atacar'):
             print('Ação inválida.')
             continue
         result = dungeon.step(cmd)
