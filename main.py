@@ -29,6 +29,10 @@ BOT_CAN_ATTACK = True  # true/false para permitir o ataque
 ATTACK_REWARD = 80
 ATTACK_PENALTY = -10
 
+# Respawn de monstro
+MONSTER_RESPAWN_TURNS = 2  # espera após morte para respawn
+MONSTER_RESPAWN_PER_TURN = 1  # quantos monstros aparecem por turno
+
 
 def clamp_pos(pos, rows, cols):
     r, c = pos
@@ -119,25 +123,33 @@ class Dungeon:
     def move_monster(self):
         if not self.monster_can_move or self.state['done']:
             return
-        if self.state['monster'] is None:
+        if not self.state['monsters']:
             return
 
-        monster_pos = self.state['monster']
         bot_pos = self.state['bot'].position
+        new_positions = set()
 
-        use_astar = random.random() < self.monster_astar_prob
-        next_pos = monster_pos
+        for monster_pos in self.state['monsters']:
+            use_astar = random.random() < self.monster_astar_prob
+            next_pos = monster_pos
+            if use_astar:
+                path = self.find_path_a_star(monster_pos, bot_pos)
+                if path and len(path) > 1:
+                    next_pos = path[1]
+            else:
+                choices = list(self._neighbors(monster_pos))
+                if choices:
+                    next_pos = random.choice(choices)
+            new_positions.add(next_pos)
 
-        if use_astar:
-            path = self.find_path_a_star(monster_pos, bot_pos)
-            if path and len(path) > 1:
-                next_pos = path[1]
-        else:
-            choices = list(self._neighbors(monster_pos))
-            if choices:
-                next_pos = random.choice(choices)
+        self.state['monsters'] = new_positions
 
-        self.state['monster'] = next_pos
+    def spawn_monsters(self, count=1):
+        occupied = {self.state['bot'].position, self.state['apple']} | self.state['pits'] | self.state['monsters']
+        empty = [(r, c) for r in range(self.rows) for c in range(self.cols) if (r, c) not in occupied]
+        random.shuffle(empty)
+        for _ in range(min(count, len(empty))):
+            self.state['monsters'].add(empty.pop())
 
     def create_random(self):
         all_cells = [(r, c) for r in range(self.rows) for c in range(self.cols)]
@@ -149,17 +161,18 @@ class Dungeon:
         bot = Bot(position=bot_pos)
         return {
             'bot': bot,
-            'monster': monster_pos,
+            'monsters': {monster_pos},
             'apple': apple_pos,
             'pits': set(pits),
             'done': False,
             'reason': None,
             'apples_collected': 0,
             'hunger': MAX_HUNGER,
+            'monster_respawn_timer': 0,
         }
 
     def spawn_apple(self):
-        occupied = {self.state['bot'].position, self.state['monster']} | self.state['pits']
+        occupied = {self.state['bot'].position} | self.state['monsters'] | self.state['pits']
         empty = [(r, c) for r in range(self.rows) for c in range(self.cols) if (r, c) not in occupied]
         if not empty:
             return
@@ -194,7 +207,7 @@ class Dungeon:
                 pos = (r, c)
                 if pos == d['bot'].position:
                     cell = f' {BOT_ICON[d["bot"].direction]} '
-                elif pos == d['monster']:
+                elif pos in d['monsters']:
                     cell = ' M '
                 elif pos == d['apple']:
                     cell = ' A '
@@ -209,41 +222,20 @@ class Dungeon:
             lines.append('+' + '---+' * self.cols)
         return '\n'.join(lines)
 
-        d = self.state
-        lines = ['Dungeon (B=bot, M=monstro, A=maçã, X=poço, .=vazio)']
-        lines.append('+' + '---+' * self.cols)
-        for r in range(self.rows):
-            row_chars = []
-            for c in range(self.cols):
-                pos = (r, c)
-                if pos == d['bot'].position:
-                    row_chars.append(' B ')
-                elif pos == d['monster']:
-                    row_chars.append(' M ')
-                elif pos == d['apple']:
-                    row_chars.append(' A ')
-                elif pos in d['pits']:
-                    row_chars.append(' X ')
-                else:
-                    row_chars.append(' . ')
-            lines.append('|' + '|'.join(row_chars) + '|')
-            lines.append('+' + '---+' * self.cols)
-        return '\n'.join(lines)
-
     def perception(self):
         bot = self.state['bot']
         r, c = bot.position
         senses = {'near_monster': False, 'near_pit': False, 'near_apple': False}
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             p = (r + dr, c + dc)
-            if p == self.state['monster']:
+            if p in self.state['monsters']:
                 senses['near_monster'] = True
             if p in self.state['pits']:
                 senses['near_pit'] = True
             if p == self.state['apple']:
                 senses['near_apple'] = True
         senses['on_apple'] = bot.position == self.state['apple']
-        senses['on_monster'] = bot.position == self.state['monster']
+        senses['on_monster'] = bot.position in self.state['monsters']
         senses['on_pit'] = bot.position in self.state['pits']
         senses['direction'] = DIRECTION_LABELS[bot.direction]
         senses['position'] = bot.position
@@ -296,8 +288,9 @@ class Dungeon:
                 reward = -5
             else:
                 target = bot.attack_forward()
-                if target == self.state['monster']:
-                    self.state['monster'] = None
+                if target in self.state['monsters']:
+                    self.state['monsters'].remove(target)
+                    self.state['monster_respawn_timer'] = 0
                     reward = ATTACK_REWARD
                 else:
                     reward = ATTACK_PENALTY
@@ -309,7 +302,7 @@ class Dungeon:
             self.move_monster()
 
         # Verificação de eventos após ações do bot e do monstro
-        if self.state['monster'] is not None and bot.position == self.state['monster']:
+        if bot.position in self.state['monsters']:
             bot.alive = False
             self.state['done'] = True
             self.state['reason'] = 'monstro'
@@ -319,6 +312,13 @@ class Dungeon:
             self.state['done'] = True
             self.state['reason'] = 'poço'
             reward = -100
+
+        # Respawn de monstros após morte (após turno)
+        if not self.state['done'] and not self.state['monsters']:
+            self.state['monster_respawn_timer'] += 1
+            if self.state['monster_respawn_timer'] >= MONSTER_RESPAWN_TURNS:
+                self.spawn_monsters(MONSTER_RESPAWN_PER_TURN)
+                self.state['monster_respawn_timer'] = 0
 
         bot.score += reward
         return {
