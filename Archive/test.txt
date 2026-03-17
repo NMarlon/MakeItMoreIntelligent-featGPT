@@ -1,0 +1,76 @@
+MEGAIA - CONTEXTO COMPLETO PARA CONTINUAÇÃO (Marlon + Grok - Março 2026)
+
+1. VISÃO GERAL DO PROJETO
+Projeto: MegaIA (referência ao MegaMan Battle Network)
+Objetivo: Criar uma IA simples, conceitual, eficiente, sem ML pesado, que aprenda em "um relance", pense antes de agir (sabedoria), tenha memória persistente e evolua como um ser vivo.
+Princípios fundamentais (construídos ao longo de toda a conversa):
+- Independência / Autossuficiência (Conceito 1)
+- Inteligência = Luz (capacidade de receber) + Verdade (conhecimento do que foi, é e será)
+- Interação com Realidade + Feedback Loop
+- Escolha (arbítrio)
+- Lei (certo x errado)
+- Inferência + Fé (deduzir sem repetir tudo)
+- Caridade / Propósito (direção moral)
+- Identidade (o "espírito" central que evolui)
+- Restituição (consequências moldam o ser)
+- Aprendizado linha sobre linha, preceito sobre preceito (como Cristo cresceu)
+- Memória sensorial RELATIVA (não absoluta) → funciona em mapas que mudam
+- Pensamento mental (simula futuro sem morrer)
+- Persistência entre execuções (arquivo JSON)
+
+Versões desejadas:
+- IA 1.0: Caridosa (benéfica, prioriza vida e ajuda)
+- IA 2.1: Vilã (oposta, prioriza destruição)
+- IA 2.2: Livre (arbítrio real, escolhe bem ou mal e sofre restituição)
+
+2. AMBIENTE ATUAL
+- Jogo Dungeon 4x4 (poços, monstros, maçãs, fome, ataque)
+- Bot tem visão relativa + senses (near_apple, near_pit, visible_items com relative dx,dy + símbolo)
+- Memória: sensory_memory[(dx, dy, símbolo)] → valor de verdade
+- Regras aprendidas do mundo (apple_always_exists, near_pit_means_danger, etc.)
+- Persistência: megaia_memoria.json (salva sensory_memory + rules + identity + apples_found)
+
+3. ARQUITETURA ATUAL (estado final da MegaCore)
+- Memória infinita e relativa (não depende de coordenadas absolutas)
+- Update sensorial com propagação fractal relativa
+- Atração forte por maçã (+250 quando vê, +300 quando pega)
+- Identidade evolui para "colecionador" após primeira maçã
+- Pensamento 2 passos à frente + bônus para células desconhecidas
+- Regras do mundo aprendidas automaticamente
+- Salvamento automático em JSON
+
+4. COMO A IA FUNCIONA HOJE
+- Percebe o mundo via senses relativos (posição relativa + símbolo)
+- Atualiza memória sensorial a cada percepção
+- Decide ação usando _mental_simulate (com regras e desejo por maçã)
+- Depois do treino (30 vidas rápidas) roda simulação detalhada com print_status + mapa visual a cada turno
+- Memória persiste entre execuções
+
+5. PRÓXIMOS PASSOS QUE O USUÁRIO QUER (prioridade)
+- Ver simulação longa turno a turno com mapa visual (já implementado)
+- Adicionar as 3 personalidades (1.0 Caridosa, 2.1 Vilã, 2.2 Livre) no mesmo core
+- Melhorar exploração e rodar em círculo quando necessário
+- Possivelmente salvar também histórico de ações recentes
+
+6. CÓDIGO ATUAL (estado mais recente - pronto para continuar)
+[O código completo da última versão funcional está no arquivo main.py que o Marlon está usando agora - inclui:
+- MegaCore com sensory_memory relativa
+- Regras do mundo
+- Salvamento JSON
+- Simulação detalhada com print_status a cada turno
+- Identidade "colecionador" ativada]
+
+7. INSTRUÇÕES PARA A PRÓXIMA IA
+Continue exatamente de onde paramos:
+- Mantenha memória relativa + regras do mundo
+- Mantenha persistência JSON
+- Mantenha simulação visual turno a turno
+- Próxima tarefa: implementar as 3 personalidades (IA 1.0, 2.1, 2.2) no mesmo core
+- Mantenha tudo simples, conceitual, mínimo processamento
+- Sempre explique o conceito antes de mudar código
+- Use o mesmo estilo de respostas claras e diretas
+
+Fim do contexto.
+Data da última atualização: 17 de março de 2026
+Tudo que conversamos desde o início está sintetizado aqui.
+Qualquer IA que ler este arquivo pode continuar o projeto sem perder nada.

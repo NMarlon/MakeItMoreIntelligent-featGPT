@@ -1,5 +1,6 @@
-import random
+﻿import random
 from dataclasses import dataclass, field
+from MegaIA import main_megaia
 
 # Configurações de cenário (ajuste aqui):
 GRID_ROWS = 4  # número de linhas do mapa
@@ -35,7 +36,7 @@ MONSTER_RESPAWN_PER_TURN = 1  # quantos monstros aparecem por turno
 
 # Respawn do bot e vidas
 BOT_INITIAL_LIVES = 3  # 0 = infinitas
-BOT_RESPAWN_MAP_POLICY = 'same'  # 'same', 'random', 'choice'
+BOT_RESPAWN_MAP_POLICY = 'random'  # 'same', 'random', 'choice' (IA escolhe)
 
 
 def clamp_pos(pos, rows, cols):
@@ -202,12 +203,10 @@ class Dungeon:
             self.state['deaths'] = old_deaths
             self.state['remaining_lives'] = old_lives
             return
-        # same map: bot in random empty cell
         bot = self.state['bot']
         bot.position = self.random_empty_position()
         bot.direction = 0
         bot.alive = True
-        bot.score = bot.score  # keep score
         bot.inventory = {'apple': False}
         self.state['hunger'] = MAX_HUNGER
 
@@ -221,14 +220,13 @@ class Dungeon:
     def bot_vision(self):
         bot = self.state['bot']
         r, c = bot.position
-        fov = []
-        if bot.direction == 0:  # norte
+        if bot.direction == 0:
             fov = [(r-1, c), (r-1, c-1), (r-1, c+1), (r-2, c), (r-2, c-1), (r-2, c+1)]
-        elif bot.direction == 1:  # leste
+        elif bot.direction == 1:
             fov = [(r, c+1), (r-1, c+1), (r+1, c+1), (r, c+2), (r-1, c+2), (r+1, c+2)]
-        elif bot.direction == 2:  # sul
+        elif bot.direction == 2:
             fov = [(r+1, c), (r+1, c-1), (r+1, c+1), (r+2, c), (r+2, c-1), (r+2, c+1)]
-        else:  # oeste
+        else:
             fov = [(r, c-1), (r-1, c-1), (r+1, c-1), (r, c-2), (r-1, c-2), (r+1, c-2)]
         visible = set()
         for nr, nc in fov:
@@ -265,9 +263,29 @@ class Dungeon:
     def perception(self):
         bot = self.state['bot']
         r, c = bot.position
-        senses = {'near_monster': False, 'near_pit': False, 'near_apple': False}
-        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            p = (r + dr, c + dc)
+        visible_positions = self.bot_vision()
+        visible_items = {}
+        for pos in visible_positions:
+            if pos == bot.position:
+                symbol = BOT_ICON[bot.direction]
+            elif pos in self.state['monsters']:
+                symbol = 'M'
+            elif pos == self.state['apple']:
+                symbol = 'A'
+            elif pos in self.state['pits']:
+                symbol = 'X'
+            else:
+                symbol = '.'
+            visible_items[pos] = { 'symbol': symbol, 'relative': (pos[0]-r, pos[1]-c) }
+        senses = {
+            'near_monster': False,
+            'near_pit': False,
+            'near_apple': False,
+            'visible_positions': visible_positions,
+            'visible_items': visible_items,
+        }
+        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            p = (r+dr, c+dc)
             if p in self.state['monsters']:
                 senses['near_monster'] = True
             if p in self.state['pits']:
@@ -285,11 +303,8 @@ class Dungeon:
     def step(self, action: str):
         if self.state['done']:
             return {'status': 'finished', 'reward': 0, 'info': 'Jogo encerrado'}
-
         bot = self.state['bot']
         reward = -1
-
-        # perda de fome a cada turno
         self.state['hunger'] -= HUNGER_LOSS_PER_TURN
         if self.state['hunger'] <= 0:
             bot.alive = False
@@ -297,22 +312,13 @@ class Dungeon:
             self.state['reason'] = 'morreu_fome'
             reward = -100
             bot.score += reward
-            return {
-                'status': 'ok',
-                'reward': reward,
-                'done': self.state['done'],
-                'reason': self.state['reason'],
-                'perception': self.perception(),
-            }
-
+            return { 'status': 'ok', 'reward': reward, 'done': self.state['done'], 'reason': self.state['reason'], 'perception': self.perception() }
         if action == 'avancar':
             bot.move_forward(self.rows, self.cols)
         elif action == 'virar_esquerda':
-            bot.turn_left()
-            reward = 0
+            bot.turn_left(); reward = 0
         elif action == 'virar_direita':
-            bot.turn_right()
-            reward = 0
+            bot.turn_right(); reward = 0
         elif action == 'pegar':
             if self.state['apple'] is not None and bot.position == self.state['apple']:
                 bot.inventory['apple'] = True
@@ -336,38 +342,18 @@ class Dungeon:
                     reward = ATTACK_PENALTY
         else:
             reward = -5
-
-        # Movimento do monstro (após ação do bot)
         if self.monster_can_move and not self.state['done']:
             self.move_monster()
-
-        # Verificação de eventos após ações do bot e do monstro
         if bot.position in self.state['monsters']:
-            bot.alive = False
-            self.state['done'] = True
-            self.state['reason'] = 'monstro'
-            reward = -100
+            bot.alive = False; self.state['done'] = True; self.state['reason'] = 'monstro'; reward = -100
         elif bot.position in self.state['pits']:
-            bot.alive = False
-            self.state['done'] = True
-            self.state['reason'] = 'poço'
-            reward = -100
-
-        # Respawn de monstros após morte (após turno)
+            bot.alive = False; self.state['done'] = True; self.state['reason'] = 'poço'; reward = -100
         if not self.state['done'] and not self.state['monsters']:
             self.state['monster_respawn_timer'] += 1
             if self.state['monster_respawn_timer'] >= MONSTER_RESPAWN_TURNS:
-                self.spawn_monsters(MONSTER_RESPAWN_PER_TURN)
-                self.state['monster_respawn_timer'] = 0
-
+                self.spawn_monsters(MONSTER_RESPAWN_PER_TURN); self.state['monster_respawn_timer'] = 0
         bot.score += reward
-        return {
-            'status': 'ok',
-            'reward': reward,
-            'done': self.state['done'],
-            'reason': self.state.get('reason'),
-            'perception': self.perception(),
-        }
+        return { 'status': 'ok', 'reward': reward, 'done': self.state['done'], 'reason': self.state.get('reason'), 'perception': self.perception() }
 
 
 def print_status(dungeon):
@@ -375,6 +361,8 @@ def print_status(dungeon):
     p = dungeon.perception()
     print(f"Posição: {p['position']} | Direção: {p['direction']} | Fome: {dungeon.state['hunger']}/{MAX_HUNGER} | Alive: {p['alive']}")
     print(f"Sensações: monstro próximo={p['near_monster']} poço próximo={p['near_pit']} maçã próxima={p['near_apple']}")
+    print(f"Visíveis: {sorted(p['visible_positions'])}")
+    print(f"Visíveis detalhado: {[ (pos, v['symbol'], v['relative']) for pos,v in sorted(p['visible_items'].items()) ]}")
     print(f"No chão: maçã={p['on_apple']} monstro={p['on_monster']} poço={p['on_pit']}")
     print(f"Inventário: {dungeon.state['bot'].inventory} | Score: {dungeon.state['bot'].score} | Maçãs colhidas: {dungeon.state['apples_collected']}")
 
@@ -383,9 +371,8 @@ def main():
     dungeon = Dungeon(rows=GRID_ROWS, cols=GRID_COLS, num_pits=NUM_PITS)
     print('=== Dungeon com Bot (classes) ===')
     print_status(dungeon)
-
     while not dungeon.state['done']:
-        cmd = input('Ação (avancar/virar_esquerda/virar_direita/pegar/quit): ').strip().lower()
+        cmd = input('Ação (avancar/virar_esquerda/virar_direita/pegar/atacar/quit): ').strip().lower()
         if cmd == 'quit':
             break
         if cmd not in ('avancar', 'virar_esquerda', 'virar_direita', 'pegar', 'atacar'):
@@ -394,10 +381,8 @@ def main():
         result = dungeon.step(cmd)
         print('Reward:', result['reward'], 'Done:', result.get('done'), 'Reason:', result.get('reason'))
         print_status(dungeon)
-
     print('Fim do jogo. Razão:', dungeon.state.get('reason'), 'Score final:', dungeon.state['bot'].score)
 
 
 if __name__ == '__main__':
-    main()
-
+    main_megaia(Dungeon, print_status)
