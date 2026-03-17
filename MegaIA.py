@@ -17,6 +17,14 @@ class MegaCore:
             'near_pit_means_danger': False,
             'see_apple_in_front_means_go': False
         }
+        self.world_facts = {
+            'morreu_poço': {'count': 0, 'turns': []},
+            'morreu_monstro': {'count': 0, 'turns': []},
+            'morreu_fome': {'count': 0, 'turns': []},
+            'recompensas': {'count': 0, 'turns': []},
+        }
+        self.timeline = []
+        self.turn = 0
         self.identity = "sobrevivente"
         self.explore_chance = 0.80
         self.apples_found = 0
@@ -29,8 +37,13 @@ class MegaCore:
             try:
                 with open(self.MEMORIA_FILE, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    self.sensory_memory = {tuple(k): v for k, v in data.get('sensory_memory', {}).items()}
+                    self.sensory_memory = {}
+                    for k, v in data.get('sensory_memory', {}).items():
+                        key = tuple(k) if isinstance(k, list) else tuple(eval(k)) if isinstance(k, str) and k.startswith('(') else tuple(k)
+                        self.sensory_memory[key] = v
                     self.rules = data.get('rules', self.rules)
+                    self.world_facts = data.get('world_facts', self.world_facts)
+                    self.timeline = data.get('timeline', self.timeline)
                     self.identity = data.get('identity', self.identity)
                     self.apples_found = data.get('apples_found', self.apples_found)
                 print("Memória da MegaIA recuperada do arquivo!")
@@ -41,6 +54,8 @@ class MegaCore:
         data = {
             'sensory_memory': {str(k): v for k, v in self.sensory_memory.items()},
             'rules': self.rules,
+            'world_facts': self.world_facts,
+            'timeline': self.timeline,
             'identity': self.identity,
             'apples_found': self.apples_found
         }
@@ -83,6 +98,96 @@ class MegaCore:
         if is_mental and change > 0:
             print(f"  (Pensamento: {symbol} em {relative} → atrai!)")
 
+    def _record_event(self, event_type, data):
+        self.timeline.append({'turn': self.turn, 'type': event_type, 'data': data})
+        if event_type not in self.world_facts:
+            self.world_facts[event_type] = {'count': 0, 'turns': []}
+        self.world_facts[event_type]['count'] += 1
+        self.world_facts[event_type]['turns'].append(self.turn)
+
+    def _temporal_risk(self, event_type, window=10):
+        info = self.world_facts.get(event_type, {'turns': []})
+        turns = info.get('turns', [])
+        recent = [t for t in turns if self.turn - window <= t <= self.turn]
+        if not recent:
+            return 0
+        freq = len(recent)/max(1, window)
+        recency = max(0, 1 - ((self.turn - recent[-1]) / window))
+        return min(1.0, freq + recency*0.5)
+
+    def _dir_vector(self, direction):
+        return {'N': (-1,0), 'S': (1,0), 'E': (0,1), 'W': (0,-1)}.get(direction, (0,1))
+
+    def _rotate(self, direction, turn):
+        order = ['N','E','S','W']
+        idx = order.index(direction)
+        if turn == 'left':
+            return order[(idx - 1) % 4]
+        return order[(idx + 1) % 4]
+
+    def _next_relative(self, act, p):
+        direction = p['direction']
+        if direction not in ['N','S','E','W']:
+            direction = 'N'
+        if act == 'avancar':
+            return self._dir_vector(direction)
+        if act == 'virar_esquerda':
+            new_dir = self._rotate(direction, 'left')
+            return self._dir_vector(new_dir)
+        if act == 'virar_direita':
+            new_dir = self._rotate(direction, 'right')
+            return self._dir_vector(new_dir)
+        return (0, 0)
+
+    def _safe_route_score(self, act, p, visible):
+        rel = self._next_relative(act, p)
+        score = 0
+
+        # risco de poço/monstro baseado no futuro celula e memória relativa
+        score -= self.get_sensory_truth(rel, 'X') * 2
+        score -= self.get_sensory_truth(rel, 'M') * 2
+
+        # se já sabemos que frente é seguro (vazio), dá bônus
+        if self.get_sensory_truth(rel, '.',) > 0:
+            score += 20
+
+        # risco temporal local, se morrer em poço/monstro nos últimos turns
+        score -= self._temporal_risk('morreu_poço') * 50
+        score -= self._temporal_risk('morreu_monstro') * 40
+
+        # preventiva: se a ação é 'avancar' para um lado desconhecido com muitos registros de morte, penaliza.
+        if act == 'avancar' and abs(rel[0]) + abs(rel[1]) == 1:
+            score -= self.world_facts.get('morreu_poço', {}).get('count', 0) * 0.4
+            score -= self.world_facts.get('morreu_monstro', {}).get('count', 0) * 0.3
+
+        return score
+
+    def _twostep_score(self, act, p):
+        direction = p['direction']
+        if direction not in ['N','S','E','W']:
+            direction = 'N'
+        score = 0
+        if act == 'avancar':
+            dr, dc = self._dir_vector(direction)
+            for step in [1,2]:
+                rel = (dr*step, dc*step)
+                score += self.get_sensory_truth(rel, 'A') * 2
+                score -= self.get_sensory_truth(rel, 'X') * 3
+                score -= self.get_sensory_truth(rel, 'M') * 2
+        elif act == 'virar_esquerda':
+            new_dir = self._rotate(direction, 'left')
+            dr, dc = self._dir_vector(new_dir)
+            rel = (dr, dc)
+            score += self.get_sensory_truth(rel, 'A') * 2
+            score -= self.get_sensory_truth(rel, 'X') * 4
+        elif act == 'virar_direita':
+            new_dir = self._rotate(direction, 'right')
+            dr, dc = self._dir_vector(new_dir)
+            rel = (dr, dc)
+            score += self.get_sensory_truth(rel, 'A') * 2
+            score -= self.get_sensory_truth(rel, 'X') * 4
+        return score
+
     def choose_action(self, p, bot_pos, bot_dir, dungeon):
         visible = p.get('visible_items', {})
 
@@ -109,6 +214,10 @@ class MegaCore:
         best_act = 'avancar'
         for act in ['avancar', 'virar_esquerda', 'virar_direita', 'pegar', 'atacar']:
             score = self._mental_simulate(act, p, visible)
+            score += self._twostep_score(act, p)
+            score += self._safe_route_score(act, p, visible)
+            if self.rules['near_pit_means_danger'] and p['near_pit'] and act == 'avancar':
+                score -= 40
             if score > best_score:
                 best_score = score
                 best_act = act
@@ -140,6 +249,9 @@ class MegaCore:
         if act == 'atacar' and p['near_monster']:
             score += 100
 
+        # Preferência por maior horizonte mental
+        score += self._twostep_score(act, p) * 0.2
+
         return score
 
 
@@ -153,9 +265,15 @@ def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200):
         dungeon = Dungeon()
 
         while not dungeon.state['done']:
+            core.turn += 1
             p = dungeon.perception()
             action = core.choose_action(p, dungeon.state['bot'].position, dungeon.state['bot'].direction, dungeon)
             result = dungeon.step(action)
+
+            if result.get('reason'):
+                core._record_event(f"morreu_{result['reason']}", {'position': p['position'], 'turn': core.turn})
+            if result['reward'] > 0:
+                core._record_event('recompensa', {'reward': result['reward'], 'turn': core.turn})
 
             # Atualiza memória sensorial relativa
             if 'visible_items' in p:
@@ -174,6 +292,7 @@ def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200):
     turn = 0
     while not dungeon.state['done'] and turn < max_turns:
         turn += 1
+        core.turn += 1
         p = dungeon.perception()
         action = core.choose_action(p, dungeon.state['bot'].position, dungeon.state['bot'].direction, dungeon)
 
@@ -182,6 +301,11 @@ def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200):
         print_status(dungeon)
 
         result = dungeon.step(action)
+
+        if result.get('reason'):
+            core._record_event(f"morreu_{result['reason']}", {'position': p['position'], 'turn': core.turn})
+        if result['reward'] > 0:
+            core._record_event('recompensa', {'reward': result['reward'], 'turn': core.turn})
 
         if 'visible_items' in p:
             for pos, item in p['visible_items'].items():
