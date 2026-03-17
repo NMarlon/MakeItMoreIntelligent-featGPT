@@ -1,6 +1,7 @@
 import random
 import json
 import os
+import ast
 
 
 # ===================== MEGAIA CORE - MEMÓRIA SENSORIAL RELATIVA + DOMÍNIO TOTAL =====================
@@ -17,9 +18,22 @@ class MegaCore:
             'near_pit_means_danger': False,
             'see_apple_in_front_means_go': False
         }
+        self.world_facts = {
+            'apple_respawn_count': 0,
+            'apple_respawn_turns': [],
+            'monster_encounters': 0,
+            'last_monster_turn': None,
+        }
         self.identity = "sobrevivente"
+        self.personality = "1.0-caridosa"  # Personalidade inicial padronizada
+        self.identity_text = (
+            "MegaIA: sobrevivente que aprende em um relance, com memória relativa "
+            "(dx,dy,símbolo), regras do mundo aprendidas e horizonte temporal."
+        )
         self.explore_chance = 0.80
         self.apples_found = 0
+        self.timeline = []
+        self.turn = 0
 
         # Carrega memória salva se existir
         self._carregar_memoria()
@@ -29,10 +43,19 @@ class MegaCore:
             try:
                 with open(self.MEMORIA_FILE, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    self.sensory_memory = {tuple(k): v for k, v in data.get('sensory_memory', {}).items()}
+                    self.sensory_memory = {}
+                    for k, v in data.get('sensory_memory', {}).items():
+                        try:
+                            key = ast.literal_eval(k)
+                        except Exception:
+                            key = tuple(k)
+                        self.sensory_memory[key] = v
                     self.rules = data.get('rules', self.rules)
+                    self.world_facts = data.get('world_facts', self.world_facts)
                     self.identity = data.get('identity', self.identity)
+                    self.personality = data.get('personality', self.personality)
                     self.apples_found = data.get('apples_found', self.apples_found)
+                    self.timeline = data.get('timeline', [])
                 print("Memória da MegaIA recuperada do arquivo!")
             except Exception as e:
                 print(f"Erro ao carregar memória: {e}. Começando do zero.")
@@ -41,8 +64,11 @@ class MegaCore:
         data = {
             'sensory_memory': {str(k): v for k, v in self.sensory_memory.items()},
             'rules': self.rules,
+            'world_facts': self.world_facts,
             'identity': self.identity,
-            'apples_found': self.apples_found
+            'personality': self.personality,
+            'apples_found': self.apples_found,
+            'timeline': self.timeline[-200:]
         }
         try:
             with open(self.MEMORIA_FILE, 'w', encoding='utf-8') as f:
@@ -83,19 +109,82 @@ class MegaCore:
         if is_mental and change > 0:
             print(f"  (Pensamento: {symbol} em {relative} → atrai!)")
 
+    def _update_personality(self):
+        # Transições simples de personalidade com base em experiência
+        if self.apples_found >= 2:
+            self.personality = '2.2-livre'
+        elif self.world_facts.get('monster_encounters', 0) >= 2:
+            self.personality = '2.1-vilao'
+
+    def _personality_action_bias(self, act, p):
+        bias = 0
+        if self.personality.startswith('1.0'):
+            if act == 'pegar' and p.get('on_apple', False):
+                bias += 260
+            if act == 'atacar':
+                bias -= 120
+            if p.get('near_pit', False) and act == 'avancar':
+                bias -= 110
+        elif self.personality.startswith('2.1'):
+            if act == 'atacar' and p.get('near_monster', False):
+                bias += 200
+            if act == 'pegar' and p.get('on_apple', False):
+                bias += 80
+            if p.get('near_pit', False) and act == 'avancar':
+                bias -= 40
+        else:  # 2.2 livre
+            if act == 'pegar' and p.get('on_apple', False):
+                bias += 200
+            if act == 'atacar' and p.get('near_monster', False):
+                bias += 80
+            if p.get('near_pit', False) and act == 'avancar':
+                bias -= 60
+        return bias
+
+    def record_event(self, turn, action, p, reward, reason):
+        self.timeline.append({
+            'turn': turn,
+            'action': action,
+            'position': p['position'],
+            'direction': p['direction'],
+            'reward': reward,
+            'reason': reason,
+            'near_apple': p.get('near_apple', False),
+            'near_monster': p.get('near_monster', False),
+            'near_pit': p.get('near_pit', False),
+        })
+
+        if reason == 'monstro':
+            self.world_facts['monster_encounters'] += 1
+            self.world_facts['last_monster_turn'] = turn
+        if p.get('near_apple', False) and action == 'pegar':
+            self.world_facts['apple_respawn_count'] += 1
+            self.world_facts['apple_respawn_turns'].append(turn)
+            if len(self.world_facts['apple_respawn_turns']) >= 2:
+                diffs = [self.world_facts['apple_respawn_turns'][i] - self.world_facts['apple_respawn_turns'][i-1] for i in range(1, len(self.world_facts['apple_respawn_turns']))]
+                self.world_facts['apple_respawn_est'] = sum(diffs) / len(diffs)
+
+    def _temporal_insight(self):
+        insight = 0
+        if self.world_facts.get('apple_respawn_est'):
+            insight += 20
+        if self.world_facts.get('last_monster_turn') is not None and self.turn - self.world_facts['last_monster_turn'] < 3:
+            insight -= 30
+        return insight
+
     def choose_action(self, p, bot_pos, bot_dir, dungeon):
         visible = p.get('visible_items', {})
 
         # ATRAÇÃO DIRETA POR MAÇÃ (visão relativa)
         for pos, item in visible.items():
             rel = item['relative']
-            if item['symbol'] == 'A':
-                if rel == (0, 1) or rel == (0, -1) or rel == (1, 0) or rel == (-1, 0):
-                    return 'avancar' if not p['on_apple'] else 'pegar'
+            if item['symbol'] == 'A' and abs(rel[0]) + abs(rel[1]) <= 1:
+                return 'avancar' if not p['on_apple'] else 'pegar'
 
         if p['on_apple']:
             return 'pegar'
 
+        self._update_personality()
         if self.apples_found >= 1:
             self.identity = "colecionador"
 
@@ -103,12 +192,15 @@ class MegaCore:
             opts = ['avancar', 'virar_esquerda', 'virar_direita']
             if p['near_monster']:
                 opts.append('atacar')
+            if p['on_apple']:
+                opts.append('pegar')
             return random.choice(opts)
 
         best_score = -999
         best_act = 'avancar'
         for act in ['avancar', 'virar_esquerda', 'virar_direita', 'pegar', 'atacar']:
             score = self._mental_simulate(act, p, visible)
+            score += self._personality_action_bias(act, p)
             if score > best_score:
                 best_score = score
                 best_act = act
@@ -140,6 +232,8 @@ class MegaCore:
         if act == 'atacar' and p['near_monster']:
             score += 100
 
+        # memória temporal: preferir ações que evitam perigo recente
+        score += self._temporal_insight()
         return score
 
 
@@ -177,7 +271,7 @@ def main_megaia(Dungeon, print_status, num_lives=30, max_turns=200):
         p = dungeon.perception()
         action = core.choose_action(p, dungeon.state['bot'].position, dungeon.state['bot'].direction, dungeon)
 
-        print(f"\nTurno {turn:3d} | MegaIA escolheu: {action} | Identidade: {core.identity}")
+        print(f"\nTurno {turn:3d} | MegaIA escolheu: {action} | Identidade: {core.identity} | Personalidade: {core.personality}")
         print(dungeon.render())
         print_status(dungeon)
 
