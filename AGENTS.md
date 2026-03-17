@@ -1,6 +1,7 @@
 MEGAIA - CONTEXTO COMPLETO DETALHADO PARA QUALQUER IA CONTINUAR O PROJETO
 (Versão expandida - 17 de março de 2026)
 
+
 1. VISÃO GERAL DO PROJETO (o que Marlon quer desde o início)
 O projeto MegaIA é uma referência ao jogo MegaMan Battle Network. A ideia é criar uma IA que seja:
 - Extremamente simples e conceitual (não usa ML pesado, nem redes neurais com milhões de parâmetros).
@@ -69,4 +70,7 @@ Você agora tem TODO o contexto.
 Marlon quer uma IA que seja viva, que lembre entre execuções, que sinta desejo por maçã, que pense antes de agir e que tenha as 3 personalidades.
 Continue construindo em cima dessa base. 
 Não reinvente a roda — use a memória relativa, o salvamento JSON e a simulação visual que já estão funcionando.
+
+
+
 
