@@ -30,7 +30,7 @@ Eu tive uma ideia, quero que faça uma espécie de "pré-tutorial", onde o bot, 
   >
 - > M , vai pra frente, MORRE (ele desaparece, ou algo assim, talvez ele possa sentir uma leve puniçãozinha, algo que ele compreenda que morrer é ruim)
   >
-- > A , vai pra frente, . > , pegar (ele sente que foi usado (tem que dar o feedback de alguma forma pra ele disso, quando eu movo meu braço EU SINTO que meu braço está exercendo certa força, esse mesmo feedback podemos por pra ele pra cada ação (como sendo mais um sentido), mas isso pode ser disparado de forma simbólica pra representar o "pegar", ele deve aprender à discernir o que é simbólico do que é real (VENDO A REALIDADE (o simbólico não age, tampouco interage com a realidade assim, o real AGE (faz ação de pegar), tem feedback real assim)),  . > (+ Maçã colhida! Eba!) ele deve ter um sensor pra inventário
+- > A , vai pra frente, . > , pegar (ele sente que foi usado (tem que dar o feedback de alguma forma pra ele disso, quando eu movo meu braço EU SINTO que meu braço está exercendo certa força, esse mesmo feedback podemos por pra ele pra cada ação (como sendo mais um sentido)), mas isso pode ser disparado de forma simbólica pra representar o "pegar", ele deve aprender à discernir o que é simbólico do que é real (VENDO A REALIDADE (o simbólico não age, tampouco interage com a realidade assim, o real AGE (faz ação de pegar), tem feedback real assim)),  . > (+ Maçã colhida! Eba!) ele deve ter um sensor pra inventário)
   >
 - > . , vira_direita, V . (ele aprende à virar)
   > ... coisas assim.
