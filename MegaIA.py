@@ -505,10 +505,16 @@ def main_megaia(
     post_train_turns=10,
     interactive=True,
     reset_memory_on_start=False,
+    core_instance=None,
 ):
-    core = MegaCore()
-    if reset_memory_on_start:
-        core.reset_memory(create_backup=True)
+    if core_instance:
+        core = core_instance
+        print("\nUsando instância da MegaIA pré-treinada pelo tutorial.")
+    else:
+        core = MegaCore()
+        if reset_memory_on_start:
+            core.reset_memory(create_backup=True)
+    
     print("=== MegaIA - Treino (30 vidas rapidas) + simulacao detalhada ===\n")
 
     for vida in range(1, num_lives + 1):

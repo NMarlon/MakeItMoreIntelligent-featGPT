@@ -1,6 +1,7 @@
 ﻿import random
 from dataclasses import dataclass, field
-from MegaIA import main_megaia
+from MegaIA import MegaCore, main_megaia
+from tutorial import run_tutorial
 
 # Configurações de cenário (ajuste aqui):
 GRID_ROWS = 4  # número de linhas do mapa
@@ -385,4 +386,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main_megaia(Dungeon, print_status)
+    # Cria o cérebro da MegaIA
+    core = MegaCore()
+    
+    # Executa o pré-tutorial para ensinar o básico
+    run_tutorial(core)
+    
+    # Inicia a simulação principal com o cérebro pré-treinado
+    main_megaia(Dungeon, print_status, core_instance=core)

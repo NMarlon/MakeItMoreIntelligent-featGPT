@@ -11,7 +11,7 @@
       "dx": -1,
       "dy": 0,
       "symbol": "A",
-      "value": 180
+      "value": 200
     },
     {
       "dx": -1,
@@ -34,8 +34,14 @@
     {
       "dx": 0,
       "dy": -1,
+      "symbol": "A",
+      "value": 200
+    },
+    {
+      "dx": 0,
+      "dy": -1,
       "symbol": "M",
-      "value": -200
+      "value": -170
     },
     {
       "dx": 0,
@@ -47,7 +53,13 @@
       "dx": 0,
       "dy": 1,
       "symbol": ".",
-      "value": 10
+      "value": 30
+    },
+    {
+      "dx": 0,
+      "dy": 1,
+      "symbol": "A",
+      "value": 200
     },
     {
       "dx": 0,
@@ -65,12 +77,18 @@
       "dx": 1,
       "dy": 0,
       "symbol": "A",
-      "value": 90
+      "value": 180
     },
     {
       "dx": 1,
       "dy": 0,
       "symbol": "M",
+      "value": -200
+    },
+    {
+      "dx": 1,
+      "dy": 0,
+      "symbol": "X",
       "value": -200
     }
   ],
@@ -84,13 +102,15 @@
   },
   "world_facts": {
     "morreu_poco": {
-      "count": 1,
+      "count": 3,
       "turns": [
-        62
+        62,
+        4,
+        4
       ]
     },
     "morreu_monstro": {
-      "count": 29,
+      "count": 101,
       "turns": [
         21,
         23,
@@ -120,7 +140,79 @@
         291,
         313,
         328,
-        341
+        341,
+        345,
+        353,
+        361,
+        368,
+        378,
+        407,
+        409,
+        443,
+        447,
+        465,
+        1,
+        8,
+        35,
+        40,
+        58,
+        71,
+        84,
+        92,
+        99,
+        105,
+        115,
+        160,
+        182,
+        190,
+        194,
+        210,
+        211,
+        214,
+        218,
+        234,
+        241,
+        250,
+        264,
+        270,
+        273,
+        276,
+        286,
+        290,
+        291,
+        314,
+        318,
+        1,
+        28,
+        46,
+        49,
+        51,
+        59,
+        60,
+        64,
+        86,
+        102,
+        103,
+        110,
+        112,
+        120,
+        140,
+        164,
+        172,
+        184,
+        191,
+        199,
+        213,
+        217,
+        218,
+        231,
+        238,
+        246,
+        254,
+        257,
+        273,
+        275,
+        280
       ]
     },
     "morreu_fome": {
@@ -128,7 +220,7 @@
       "turns": []
     },
     "recompensa": {
-      "count": 15,
+      "count": 51,
       "turns": [
         71,
         122,
@@ -144,7 +236,43 @@
         268,
         289,
         315,
-        333
+        333,
+        423,
+        431,
+        445,
+        457,
+        462,
+        3,
+        9,
+        22,
+        24,
+        26,
+        41,
+        78,
+        122,
+        124,
+        170,
+        199,
+        217,
+        242,
+        248,
+        3,
+        20,
+        56,
+        67,
+        125,
+        131,
+        135,
+        162,
+        177,
+        181,
+        193,
+        204,
+        221,
+        223,
+        235,
+        249,
+        269
       ]
     }
   },
@@ -598,8 +726,1098 @@
         ],
         "turn": 341
       }
+    },
+    {
+      "turn": 345,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          2
+        ],
+        "turn": 345
+      }
+    },
+    {
+      "turn": 353,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          0
+        ],
+        "turn": 353
+      }
+    },
+    {
+      "turn": 361,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          0
+        ],
+        "turn": 361
+      }
+    },
+    {
+      "turn": 368,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          0
+        ],
+        "turn": 368
+      }
+    },
+    {
+      "turn": 378,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          2
+        ],
+        "turn": 378
+      }
+    },
+    {
+      "turn": 407,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          2
+        ],
+        "turn": 407
+      }
+    },
+    {
+      "turn": 409,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 409
+      }
+    },
+    {
+      "turn": 423,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 423
+      }
+    },
+    {
+      "turn": 431,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 431
+      }
+    },
+    {
+      "turn": 443,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          0
+        ],
+        "turn": 443
+      }
+    },
+    {
+      "turn": 445,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 445
+      }
+    },
+    {
+      "turn": 447,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          2
+        ],
+        "turn": 447
+      }
+    },
+    {
+      "turn": 457,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 457
+      }
+    },
+    {
+      "turn": 462,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 462
+      }
+    },
+    {
+      "turn": 465,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          2
+        ],
+        "turn": 465
+      }
+    },
+    {
+      "turn": 1,
+      "type": "morreu_monstro",
+      "data": {
+        "position": null,
+        "turn": 1
+      }
+    },
+    {
+      "turn": 3,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 3
+      }
+    },
+    {
+      "turn": 4,
+      "type": "morreu_poco",
+      "data": {
+        "position": null,
+        "turn": 4
+      }
+    },
+    {
+      "turn": 8,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          1
+        ],
+        "turn": 8
+      }
+    },
+    {
+      "turn": 9,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 9
+      }
+    },
+    {
+      "turn": 22,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 22
+      }
+    },
+    {
+      "turn": 24,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 24
+      }
+    },
+    {
+      "turn": 26,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 26
+      }
+    },
+    {
+      "turn": 35,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          0
+        ],
+        "turn": 35
+      }
+    },
+    {
+      "turn": 40,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          0
+        ],
+        "turn": 40
+      }
+    },
+    {
+      "turn": 41,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 41
+      }
+    },
+    {
+      "turn": 58,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          0
+        ],
+        "turn": 58
+      }
+    },
+    {
+      "turn": 71,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          0
+        ],
+        "turn": 71
+      }
+    },
+    {
+      "turn": 78,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 78
+      }
+    },
+    {
+      "turn": 84,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          3
+        ],
+        "turn": 84
+      }
+    },
+    {
+      "turn": 92,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          3
+        ],
+        "turn": 92
+      }
+    },
+    {
+      "turn": 99,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          2
+        ],
+        "turn": 99
+      }
+    },
+    {
+      "turn": 105,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 105
+      }
+    },
+    {
+      "turn": 115,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          3
+        ],
+        "turn": 115
+      }
+    },
+    {
+      "turn": 122,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 122
+      }
+    },
+    {
+      "turn": 124,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 124
+      }
+    },
+    {
+      "turn": 160,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          1
+        ],
+        "turn": 160
+      }
+    },
+    {
+      "turn": 170,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 170
+      }
+    },
+    {
+      "turn": 182,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          2
+        ],
+        "turn": 182
+      }
+    },
+    {
+      "turn": 190,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          3
+        ],
+        "turn": 190
+      }
+    },
+    {
+      "turn": 194,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          3
+        ],
+        "turn": 194
+      }
+    },
+    {
+      "turn": 199,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 199
+      }
+    },
+    {
+      "turn": 210,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          3
+        ],
+        "turn": 210
+      }
+    },
+    {
+      "turn": 211,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          0
+        ],
+        "turn": 211
+      }
+    },
+    {
+      "turn": 214,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          0
+        ],
+        "turn": 214
+      }
+    },
+    {
+      "turn": 217,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 217
+      }
+    },
+    {
+      "turn": 218,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          3
+        ],
+        "turn": 218
+      }
+    },
+    {
+      "turn": 234,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 234
+      }
+    },
+    {
+      "turn": 241,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          1
+        ],
+        "turn": 241
+      }
+    },
+    {
+      "turn": 242,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 242
+      }
+    },
+    {
+      "turn": 248,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 248
+      }
+    },
+    {
+      "turn": 250,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          1
+        ],
+        "turn": 250
+      }
+    },
+    {
+      "turn": 264,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          3
+        ],
+        "turn": 264
+      }
+    },
+    {
+      "turn": 270,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 270
+      }
+    },
+    {
+      "turn": 273,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          1
+        ],
+        "turn": 273
+      }
+    },
+    {
+      "turn": 276,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          3
+        ],
+        "turn": 276
+      }
+    },
+    {
+      "turn": 286,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          1
+        ],
+        "turn": 286
+      }
+    },
+    {
+      "turn": 290,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          1
+        ],
+        "turn": 290
+      }
+    },
+    {
+      "turn": 291,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          3
+        ],
+        "turn": 291
+      }
+    },
+    {
+      "turn": 314,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          0
+        ],
+        "turn": 314
+      }
+    },
+    {
+      "turn": 318,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 318
+      }
+    },
+    {
+      "turn": 1,
+      "type": "morreu_monstro",
+      "data": {
+        "position": null,
+        "turn": 1
+      }
+    },
+    {
+      "turn": 3,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 3
+      }
+    },
+    {
+      "turn": 4,
+      "type": "morreu_poco",
+      "data": {
+        "position": null,
+        "turn": 4
+      }
+    },
+    {
+      "turn": 20,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 20
+      }
+    },
+    {
+      "turn": 28,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          3
+        ],
+        "turn": 28
+      }
+    },
+    {
+      "turn": 46,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          3
+        ],
+        "turn": 46
+      }
+    },
+    {
+      "turn": 49,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          3
+        ],
+        "turn": 49
+      }
+    },
+    {
+      "turn": 51,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          1
+        ],
+        "turn": 51
+      }
+    },
+    {
+      "turn": 56,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 56
+      }
+    },
+    {
+      "turn": 59,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          0
+        ],
+        "turn": 59
+      }
+    },
+    {
+      "turn": 60,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          0
+        ],
+        "turn": 60
+      }
+    },
+    {
+      "turn": 64,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          3
+        ],
+        "turn": 64
+      }
+    },
+    {
+      "turn": 67,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 67
+      }
+    },
+    {
+      "turn": 86,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          1
+        ],
+        "turn": 86
+      }
+    },
+    {
+      "turn": 102,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          1
+        ],
+        "turn": 102
+      }
+    },
+    {
+      "turn": 103,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          2
+        ],
+        "turn": 103
+      }
+    },
+    {
+      "turn": 110,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          1
+        ],
+        "turn": 110
+      }
+    },
+    {
+      "turn": 112,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          3
+        ],
+        "turn": 112
+      }
+    },
+    {
+      "turn": 120,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          3
+        ],
+        "turn": 120
+      }
+    },
+    {
+      "turn": 125,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 125
+      }
+    },
+    {
+      "turn": 131,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 131
+      }
+    },
+    {
+      "turn": 135,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 135
+      }
+    },
+    {
+      "turn": 140,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          1
+        ],
+        "turn": 140
+      }
+    },
+    {
+      "turn": 162,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 162
+      }
+    },
+    {
+      "turn": 164,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          1
+        ],
+        "turn": 164
+      }
+    },
+    {
+      "turn": 172,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          3
+        ],
+        "turn": 172
+      }
+    },
+    {
+      "turn": 177,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 177
+      }
+    },
+    {
+      "turn": 181,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 181
+      }
+    },
+    {
+      "turn": 184,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          2
+        ],
+        "turn": 184
+      }
+    },
+    {
+      "turn": 191,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          3
+        ],
+        "turn": 191
+      }
+    },
+    {
+      "turn": 193,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 193
+      }
+    },
+    {
+      "turn": 199,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          2
+        ],
+        "turn": 199
+      }
+    },
+    {
+      "turn": 204,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 204
+      }
+    },
+    {
+      "turn": 213,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          3
+        ],
+        "turn": 213
+      }
+    },
+    {
+      "turn": 217,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          0
+        ],
+        "turn": 217
+      }
+    },
+    {
+      "turn": 218,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          3
+        ],
+        "turn": 218
+      }
+    },
+    {
+      "turn": 221,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 221
+      }
+    },
+    {
+      "turn": 223,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 223
+      }
+    },
+    {
+      "turn": 231,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          3
+        ],
+        "turn": 231
+      }
+    },
+    {
+      "turn": 235,
+      "type": "recompensa",
+      "data": {
+        "reward": 50,
+        "turn": 235
+      }
+    },
+    {
+      "turn": 238,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          3,
+          0
+        ],
+        "turn": 238
+      }
+    },
+    {
+      "turn": 246,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 246
+      }
+    },
+    {
+      "turn": 249,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 249
+      }
+    },
+    {
+      "turn": 254,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          2
+        ],
+        "turn": 254
+      }
+    },
+    {
+      "turn": 257,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          1,
+          0
+        ],
+        "turn": 257
+      }
+    },
+    {
+      "turn": 269,
+      "type": "recompensa",
+      "data": {
+        "reward": 80,
+        "turn": 269
+      }
+    },
+    {
+      "turn": 273,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          1
+        ],
+        "turn": 273
+      }
+    },
+    {
+      "turn": 275,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          2,
+          2
+        ],
+        "turn": 275
+      }
+    },
+    {
+      "turn": 280,
+      "type": "morreu_monstro",
+      "data": {
+        "position": [
+          0,
+          2
+        ],
+        "turn": 280
+      }
     }
   ],
   "identity": "colecionador",
-  "apples_found": 2
+  "apples_found": 13
 }
