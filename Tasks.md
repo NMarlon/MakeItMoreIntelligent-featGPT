@@ -1,4 +1,4 @@
-- [ ] COLOCAR CORES NOS PRINTS (URGENTE!), pra ficar mais claro e intuitivo de enxergar o que é o que.
+- [x] COLOCAR CORES NOS PRINTS (URGENTE!), pra ficar mais claro e intuitivo de enxergar o que é o que.
 
 - [ ] (ULTRA URGENTE!!) COMENTAR TODO código (para que fique inteligível cada coisa)
   - [ ] E Criar uma DOCUMENTAÇÃO.
@@ -21,7 +21,7 @@
 
 
 
-- [v]  Pré-tutorial (parece que foi feito... Vamos ver, ainda tem que fazer mais testes)
+- [x]  Pré-tutorial (parece que foi feito... Vamos ver, ainda tem que fazer mais testes)
     *Descrição*
 
 Eu tive uma ideia, quero que faça uma espécie de "pré-tutorial", onde o bot, ele, antes de entrar no jogo, ele "vê" (como se alguém ensinasse ele) com os próprios olhos, algumas possibilidades como:

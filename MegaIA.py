@@ -5,6 +5,15 @@ import random
 import shutil
 from datetime import datetime
 
+# Cores ANSI para terminal
+ANSI_RESET = '\x1b[0m'
+ANSI_RED = '\x1b[91m'
+ANSI_GREEN = '\x1b[92m'
+ANSI_YELLOW = '\x1b[93m'
+ANSI_BLUE = '\x1b[94m'
+ANSI_MAGENTA = '\x1b[95m'
+ANSI_CYAN = '\x1b[96m'
+ANSI_WHITE = '\x1b[97m'
 
 class MegaCore:
     MEMORIA_FILE = "megaia_memoria.json"
@@ -207,9 +216,9 @@ class MegaCore:
             self.timeline = data.get("timeline", []) if isinstance(data.get("timeline"), list) else []
             self.identity = str(data.get("identity", self.identity))
             self.apples_found = max(0, self._safe_int(data.get("apples_found", self.apples_found), 0))
-            print("Memoria da MegaIA recuperada do arquivo.")
+            print(f"{ANSI_GREEN}Memoria da MegaIA recuperada do arquivo.{ANSI_RESET}")
         except Exception as e:
-            print(f"Erro ao carregar memoria: {e}. Iniciando do zero.")
+            print(f"{ANSI_RED}Erro ao carregar memoria: {e}. Iniciando do zero.{ANSI_RESET}")
 
     def _salvar_memoria(self):
         data = {
@@ -224,9 +233,9 @@ class MegaCore:
         try:
             with open(self.memory_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            print("Memoria da MegaIA salva no arquivo.")
+            print(f"{ANSI_GREEN}Memoria da MegaIA salva no arquivo.{ANSI_RESET}")
         except Exception as e:
-            print(f"Erro ao salvar memoria: {e}")
+            print(f"{ANSI_RED}Erro ao salvar memoria: {e}{ANSI_RESET}")
 
     def reset_memory(self, create_backup=True):
         backup_path = None
@@ -235,11 +244,11 @@ class MegaCore:
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
             backup_path = f"{base}.backup-{timestamp}{ext or '.json'}"
             shutil.copy2(self.memory_file, backup_path)
-            print(f"Backup de memoria criado: {backup_path}")
+            print(f"{ANSI_YELLOW}Backup de memoria criado: {backup_path}{ANSI_RESET}")
 
         self._reset_runtime_state()
         self._salvar_memoria()
-        print("Memoria da MegaIA reiniciada.")
+        print(f"{ANSI_YELLOW}Memoria da MegaIA reiniciada.{ANSI_RESET}")
         return backup_path
 
     def finalizar_vida(self):
@@ -267,7 +276,7 @@ class MegaCore:
             delta += 80
         self._apply_sensory_delta(relative, symbol, delta)
         if is_mental and delta > 0:
-            print(f"  (Pensamento: {symbol} em {relative} -> atrai)")
+            print(f"  {ANSI_BLUE}(Pensamento: {symbol} em {relative} -> atrai){ANSI_RESET}")
 
     def learn_from_turn(self, p_before, action, result, p_after):
         if not isinstance(p_before, dict):
@@ -509,13 +518,13 @@ def main_megaia(
 ):
     if core_instance:
         core = core_instance
-        print("\nUsando instância da MegaIA pré-treinada pelo tutorial.")
+        print(f"\n{ANSI_GREEN}Usando instância da MegaIA pré-treinada pelo tutorial.{ANSI_RESET}")
     else:
         core = MegaCore()
         if reset_memory_on_start:
             core.reset_memory(create_backup=True)
     
-    print("=== MegaIA - Treino (30 vidas rapidas) + simulacao detalhada ===\n")
+    print(f"{ANSI_MAGENTA}=== MegaIA - Treino ({num_lives} vidas rapidas) + simulacao detalhada ==={ANSI_RESET}\n")
 
     for vida in range(1, num_lives + 1):
         core.explore_chance = max(0.15, core.explore_chance - 0.03)
@@ -548,20 +557,21 @@ def main_megaia(
             core.learn_from_turn(p_before, action, result, p_after)
 
         if vida % 5 == 0:
+            score_color = ANSI_GREEN if dungeon.state['bot'].score >= 0 else ANSI_RED
             print(
-                f"Vida {vida} concluida | Macas: {dungeon.state['apples_collected']} | "
-                f"Score: {dungeon.state['bot'].score}"
+                f"Vida {vida} concluida | Maçãs: {ANSI_GREEN}{dungeon.state['apples_collected']}{ANSI_RESET} | "
+                f"Score: {score_color}{dungeon.state['bot'].score}{ANSI_RESET}"
             )
         core.finalizar_vida()
 
-    print("\nTreino concluido! Rodando simulacao detalhada turno a turno...\n")
+    print(f"\n{ANSI_MAGENTA}Treino concluido! Rodando simulacao detalhada turno a turno...{ANSI_RESET}\n")
 
     cycle = 0
     total_turns = 0
     dungeon = Dungeon()
     while True:
         cycle += 1
-        print(f"\n=== Simulacao pos-treino: ciclo {cycle}, ate {post_train_turns} turnos ===")
+        print(f"\n{ANSI_CYAN}=== Simulacao pos-treino: ciclo {cycle}, ate {post_train_turns} turnos ==={ANSI_RESET}")
         for _ in range(1, post_train_turns + 1):
             if dungeon.state["done"]:
                 break
@@ -575,7 +585,7 @@ def main_megaia(
                 dungeon,
             )
 
-            print(f"\nTurno {total_turns:3d} | MegaIA escolheu: {action} | Identidade: {core.identity}")
+            print(f"\nTurno {total_turns:3d} | MegaIA escolheu: {ANSI_YELLOW}{action}{ANSI_RESET} | Identidade: {ANSI_CYAN}{core.identity}{ANSI_RESET}")
             print(dungeon.render())
             print_status(dungeon)
 
@@ -596,10 +606,12 @@ def main_megaia(
             core.learn_from_turn(p_before, action, result, p_after)
 
             if dungeon.state["done"]:
-                print(f"\nFim da simulacao! Razao: {dungeon.state.get('reason', 'desconhecida')}")
+                reason_color = ANSI_RED if dungeon.state.get('reason') else ANSI_WHITE
+                score_color = ANSI_GREEN if dungeon.state['bot'].score >= 0 else ANSI_RED
+                print(f"\n{ANSI_RED}Fim da simulacao! Razao: {reason_color}{dungeon.state.get('reason', 'desconhecida')}{ANSI_RESET}")
                 print(
-                    f"Macas finais: {dungeon.state['apples_collected']} | "
-                    f"Score final: {dungeon.state['bot'].score}"
+                    f"Maçãs finais: {ANSI_GREEN}{dungeon.state['apples_collected']}{ANSI_RESET} | "
+                    f"Score final: {score_color}{dungeon.state['bot'].score}{ANSI_RESET}"
                 )
                 break
 
@@ -607,15 +619,15 @@ def main_megaia(
             if not interactive:
                 print("\nModo nao interativo: encerrando apos morte/fim de mapa.")
                 break
-            escolha_fim = input("Mapa finalizado. [R]einiciar, [C]ontinuar mesmo mapa, [S]air: ").strip().lower()
+            escolha_fim = input(f"{ANSI_YELLOW}Mapa finalizado. [R]einiciar, [C]ontinuar mesmo mapa, [S]air: {ANSI_RESET}").strip().lower()
             if escolha_fim in ["s", "sair", "q", "quit"]:
-                print("Encerrando simulacao por escolha do usuario.")
+                print(f"{ANSI_YELLOW}Encerrando simulacao por escolha do usuario.{ANSI_RESET}")
                 break
             if escolha_fim in ["r", "reiniciar", "novo", "mapa", "n"]:
                 dungeon = Dungeon()
-                print("Reiniciando em novo mapa automatico...")
+                print(f"{ANSI_YELLOW}Reiniciando em novo mapa automatico...{ANSI_RESET}")
                 continue
-            print("Continuando o mesmo mapa por mais um ciclo...")
+            print(f"{ANSI_YELLOW}Continuando o mesmo mapa por mais um ciclo...{ANSI_RESET}")
 
         print(f"\nCiclo concluido ({post_train_turns} turnos). Total de turnos: {total_turns}.")
 
@@ -623,16 +635,15 @@ def main_megaia(
             print("Modo nao interativo: encerrando apos o ciclo de simulacao.")
             break
 
-        escolha = input("Escolha: [C]ontinuar mesmo mapa, [R]einiciar mapa automatico, [S]air: ").strip().lower()
+        escolha = input(f"{ANSI_YELLOW}Escolha: [C]ontinuar mesmo mapa, [R]einiciar mapa automatico, [S]air: {ANSI_RESET}").strip().lower()
         if escolha in ["s", "sair", "q", "quit"]:
-            print("Encerrando simulacao por escolha do usuario.")
+            print(f"{ANSI_YELLOW}Encerrando simulacao por escolha do usuario.{ANSI_RESET}")
             break
         if escolha in ["r", "reiniciar", "mapa", "novo", "n"]:
             dungeon = Dungeon()
-            print("Reiniciando em novo mapa automatico...")
+            print(f"{ANSI_YELLOW}Reiniciando em novo mapa automatico...{ANSI_RESET}")
             continue
-        print("Continuando o mesmo mapa por mais um ciclo...")
+        print(f"{ANSI_YELLOW}Continuando o mesmo mapa por mais um ciclo...{ANSI_RESET}")
 
     core.finalizar_vida()
-    print("Simulacao terminada. Memoria salva para a proxima execucao.")
-
+    print(f"{ANSI_GREEN}Simulacao terminada. Memoria salva para a proxima execucao.{ANSI_RESET}")

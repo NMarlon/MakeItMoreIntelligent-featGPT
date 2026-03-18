@@ -1,12 +1,21 @@
-
 from MegaIA import MegaCore
+
+# Cores ANSI para terminal
+ANSI_RESET = '\x1b[0m'
+ANSI_RED = '\x1b[91m'
+ANSI_GREEN = '\x1b[92m'
+ANSI_YELLOW = '\x1b[93m'
+ANSI_BLUE = '\x1b[94m'
+ANSI_MAGENTA = '\x1b[95m'
+ANSI_CYAN = '\x1b[96m'
+ANSI_WHITE = '\x1b[97m'
 
 def run_tutorial(core: MegaCore):
     """
     Executa uma série de cenários de aprendizado pré-definidos para ensinar ao bot
     as regras básicas do mundo.
     """
-    print("=== Iniciando Pré-Tutorial da MegaIA ===")
+    print(f"=== {ANSI_MAGENTA}Iniciando Pré-Tutorial da MegaIA{ANSI_RESET} ===")
 
     # Cenário 1: Aprender a avançar com sucesso
     ensinar_cenario(core, {
@@ -53,14 +62,14 @@ def run_tutorial(core: MegaCore):
         'percepcao_final': {'on_apple': False, 'on_monster': False, 'on_pit': True}
     })
 
-    print("=== Pré-Tutorial Concluído ===")
+    print(f"=== {ANSI_MAGENTA}Pré-Tutorial Concluído{ANSI_RESET} ===")
     core.finalizar_vida() # Salva o aprendizado do tutorial
 
 def ensinar_cenario(core: MegaCore, cenario: dict):
     """
     Simula um único cenário de aprendizado para o MegaCore.
     """
-    print(f"\nEnsinando: {cenario['descricao']}")
+    print(f"\n{ANSI_YELLOW}Ensinando:{ANSI_RESET} {cenario['descricao']}")
     
     p_inicial = cenario['percepcao_inicial']
     acao = cenario['acao']
@@ -70,16 +79,20 @@ def ensinar_cenario(core: MegaCore, cenario: dict):
     # A MegaIA "pensa" e "aprende" com o resultado fornecido
     core.learn_from_turn(p_inicial, acao, resultado, p_final)
     
-    print(f"  Ação: '{acao}' -> Resultado: Reward {resultado['reward']}, Razão: {resultado['reason']}")
+    reward = resultado['reward']
+    reward_color = ANSI_GREEN if reward > 0 else (ANSI_RED if reward < 0 else ANSI_WHITE)
+    reason_str = f", Razão: {resultado['reason']}" if resultado['reason'] else ""
+
+    print(f"  Ação: '{ANSI_CYAN}{acao}{ANSI_RESET}' -> Resultado: Reward {reward_color}{reward}{ANSI_RESET}{reason_str}")
     
     # Forçar o aprendizado dos instintos básicos
     if resultado['reward'] > 0:
         core._record_event("recompensa", {"reward": resultado['reward'], "turn": core.turn})
-        print("  MegaIA sentiu uma recompensa (instinto 'encontrar maçã' reforçado).")
+        print(f"  {ANSI_GREEN}MegaIA sentiu uma recompensa (instinto 'encontrar maçã' reforçado).{ANSI_RESET}")
     elif resultado['reward'] < -50:
         reason = core._normalize_reason(resultado.get('reason'))
         if reason:
             core._record_event(f"morreu_{reason}", {"position": p_inicial.get("position"), "turn": core.turn})
-            print(f"  MegaIA sentiu uma punição (instinto 'não morrer' de '{reason}' reforçado).")
+            print(f"  {ANSI_RED}MegaIA sentiu uma punição (instinto 'não morrer' de '{reason}' reforçado).{ANSI_RESET}")
 
     core.turn += 1

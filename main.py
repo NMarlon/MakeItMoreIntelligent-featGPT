@@ -14,8 +14,14 @@ MOVES = {0: (-1, 0), 1: (0, 1), 2: (1, 0), 3: (0, -1)}
 BOT_ICON = {0: '^', 1: '>', 2: 'v', 3: '<'}
 
 # Cores ANSI para terminal
-ANSI_YELLOW = '\x1b[93m'
 ANSI_RESET = '\x1b[0m'
+ANSI_RED = '\x1b[91m'
+ANSI_GREEN = '\x1b[92m'
+ANSI_YELLOW = '\x1b[93m'
+ANSI_BLUE = '\x1b[94m'
+ANSI_MAGENTA = '\x1b[95m'
+ANSI_CYAN = '\x1b[96m'
+ANSI_WHITE = '\x1b[97m'
 
 # Configurações do monstro
 MONSTER_CAN_MOVE = True  # true/false para controlar se o monstro se move
@@ -41,6 +47,7 @@ BOT_RESPAWN_MAP_POLICY = 'random'  # 'same', 'random', 'choice' (IA escolhe)
 
 
 def clamp_pos(pos, rows, cols):
+    """Garante que uma posição (linha, coluna) permaneça dentro dos limites do grid."""
     r, c = pos
     r = max(0, min(rows - 1, r))
     c = max(0, min(cols - 1, c))
@@ -49,35 +56,55 @@ def clamp_pos(pos, rows, cols):
 
 @dataclass
 class Bot:
+    """Representa o agente (ou 'bot') no ambiente da dungeon."""
     position: tuple[int, int]
-    direction: int = 0
+    direction: int = 0  # 0:N, 1:E, 2:S, 3:W
     alive: bool = True
     score: int = 0
     inventory: dict[str, bool] = field(default_factory=lambda: {'apple': False})
 
     def turn_left(self):
+        """Gira o bot 90 graus para a esquerda."""
         self.direction = (self.direction - 1) % 4
         return 'virar_esquerda'
 
     def turn_right(self):
+        """Gira o bot 90 graus para a direita."""
         self.direction = (self.direction + 1) % 4
         return 'virar_direita'
 
     def move_forward(self, rows, cols):
+        """Move o bot uma casa para frente na direção atual."""
         dr, dc = MOVES[self.direction]
         new_pos = (self.position[0] + dr, self.position[1] + dc)
+        # Garante que o bot não saia dos limites do mapa
         new_pos = clamp_pos(new_pos, rows, cols)
         self.position = new_pos
         return 'avancar'
 
     def attack_forward(self):
+        """Retorna a coordenada da casa à frente do bot, alvo do ataque."""
         dr, dc = MOVES[self.direction]
         return (self.position[0] + dr, self.position[1] + dc)
 
 
 class Dungeon:
+    """
+    Gerencia o estado do ambiente (o 'mapa'), incluindo a posição de todos os
+    elementos e a física do jogo.
+    """
     def __init__(self, rows=GRID_ROWS, cols=GRID_COLS, num_pits=NUM_PITS,
                  monster_can_move=MONSTER_CAN_MOVE, monster_astar_prob=MONSTER_ASTAR_PROB):
+        """
+        Inicializa a dungeon.
+        
+        Args:
+            rows (int): Número de linhas no grid.
+            cols (int): Número de colunas no grid.
+            num_pits (int): Número de poços de perigo.
+            monster_can_move (bool): Se o monstro pode se mover.
+            monster_astar_prob (float): Probabilidade do monstro usar A* para perseguir.
+        """
         self.rows = rows
         self.cols = cols
         self.num_pits = num_pits
@@ -158,18 +185,32 @@ class Dungeon:
             self.state['monsters'].add(empty.pop())
 
     def create_random(self):
+        """
+        Cria um estado de jogo inicial aleatório, posicionando o bot, monstro,
+        maçã e poços em locais aleatórios e não sobrepostos.
+        
+        Returns:
+            dict: O dicionário de estado inicial do jogo.
+        """
         all_cells = [(r, c) for r in range(self.rows) for c in range(self.cols)]
         random.shuffle(all_cells)
+        
+        # Garante que haja células suficientes para todos os objetos
+        if len(all_cells) < 3 + self.num_pits:
+            raise ValueError("Grid muito pequeno para o número de objetos e poços.")
+
         bot_pos = all_cells.pop()
         monster_pos = all_cells.pop()
         apple_pos = all_cells.pop()
-        pits = [all_cells.pop() for _ in range(min(self.num_pits, len(all_cells)))]
+        pits = {all_cells.pop() for _ in range(min(self.num_pits, len(all_cells)))}
+        
         bot = Bot(position=bot_pos)
+        
         return {
             'bot': bot,
             'monsters': {monster_pos},
             'apple': apple_pos,
-            'pits': set(pits),
+            'pits': pits,
             'done': False,
             'reason': None,
             'apples_collected': 0,
@@ -238,24 +279,36 @@ class Dungeon:
     def render(self):
         d = self.state
         visible = self.bot_vision()
-        lines = ['Dungeon (B=bot, M=monstro, A=maçã, X=poço, .=vazio)']
+        lines = [f'Dungeon ({ANSI_CYAN}B=bot{ANSI_RESET}, {ANSI_RED}M=monstro{ANSI_RESET}, {ANSI_GREEN}A=maçã{ANSI_RESET}, {ANSI_RED}X=poço{ANSI_RESET}, .=vazio)']
         lines.append('+' + '---+' * self.cols)
         for r in range(self.rows):
             row_chars = []
             for c in range(self.cols):
                 pos = (r, c)
+                
+                # Determine base cell content
                 if pos == d['bot'].position:
-                    cell = f' {BOT_ICON[d["bot"].direction]} '
+                    cell_content = f' {BOT_ICON[d["bot"].direction]} '
+                    color = ANSI_CYAN
                 elif pos in d['monsters']:
-                    cell = ' M '
+                    cell_content = ' M '
+                    color = ANSI_RED
                 elif pos == d['apple']:
-                    cell = ' A '
+                    cell_content = ' A '
+                    color = ANSI_GREEN
                 elif pos in d['pits']:
-                    cell = ' X '
+                    cell_content = ' X '
+                    color = ANSI_RED
                 else:
-                    cell = ' . '
-                if pos in visible and pos != d['bot'].position:
-                    cell = f'{ANSI_YELLOW}{cell}{ANSI_RESET}'
+                    cell_content = ' . '
+                    color = ANSI_WHITE # Default color for empty space
+
+                # Apply yellow highlight for visibility
+                is_visible = pos in visible and pos != d['bot'].position
+                if is_visible and color == ANSI_WHITE: # Only highlight empty visible cells
+                    color = ANSI_YELLOW
+
+                cell = f'{color}{cell_content}{ANSI_RESET}'
                 row_chars.append(cell)
             lines.append('|' + '|'.join(row_chars) + '|')
             lines.append('+' + '---+' * self.cols)
@@ -358,14 +411,69 @@ class Dungeon:
 
 
 def print_status(dungeon):
+    """Imprime o estado atual do jogo de forma colorida e formatada."""
     print(dungeon.render())
     p = dungeon.perception()
-    print(f"Posição: {p['position']} | Direção: {p['direction']} | Fome: {dungeon.state['hunger']}/{MAX_HUNGER} | Alive: {p['alive']}")
-    print(f"Sensações: monstro próximo={p['near_monster']} poço próximo={p['near_pit']} maçã próxima={p['near_apple']}")
-    print(f"Visíveis: {sorted(p['visible_positions'])}")
-    print(f"Visíveis detalhado: {[ (pos, v['symbol'], v['relative']) for pos,v in sorted(p['visible_items'].items()) ]}")
-    print(f"No chão: maçã={p['on_apple']} monstro={p['on_monster']} poço={p['on_pit']}")
-    print(f"Inventário: {dungeon.state['bot'].inventory} | Score: {dungeon.state['bot'].score} | Maçãs colhidas: {dungeon.state['apples_collected']}")
+
+    # --- Cores para o status ---
+    LBL_COLOR = ANSI_WHITE  # Cor para as etiquetas (e.g., "Posição:")
+    VAL_COLOR = ANSI_CYAN   # Cor padrão para valores
+    GOOD_COLOR = ANSI_GREEN
+    BAD_COLOR = ANSI_RED
+    NEUTRAL_COLOR = ANSI_YELLOW
+
+    def color_bool(val, is_good=True):
+        """Colore um booleano (Verde para True/bom, Vermelho para True/ruim)."""
+        if val:
+            return f"{GOOD_COLOR if is_good else BAD_COLOR}{val}{ANSI_RESET}"
+        return f"{ANSI_WHITE}{val}{ANSI_RESET}"
+
+    # --- Linha 1: Posição, Direção, Fome, Status ---
+    pos_str = f"{LBL_COLOR}Posição:{ANSI_RESET} {VAL_COLOR}{p['position']}{ANSI_RESET}"
+    dir_str = f"{LBL_COLOR}Direção:{ANSI_RESET} {VAL_COLOR}{p['direction']}{ANSI_RESET}"
+    
+    hunger = dungeon.state['hunger']
+    hunger_color = GOOD_COLOR if hunger > MAX_HUNGER * 0.4 else (NEUTRAL_COLOR if hunger > MAX_HUNGER * 0.15 else BAD_COLOR)
+    hunger_str = f"{LBL_COLOR}Fome:{ANSI_RESET} {hunger_color}{hunger}/{MAX_HUNGER}{ANSI_RESET}"
+    
+    alive_str = f"{LBL_COLOR}Alive:{ANSI_RESET} {color_bool(p['alive'])}"
+    print(f"{pos_str} | {dir_str} | {hunger_str} | {alive_str}")
+
+    # --- Linha 2: Sensações Próximas ---
+    near_m = color_bool(p['near_monster'], is_good=False)
+    near_p = color_bool(p['near_pit'], is_good=False)
+    near_a = color_bool(p['near_apple'])
+    print(f"{LBL_COLOR}Sensações:{ANSI_RESET} monstro próximo={near_m} poço próximo={near_p} maçã próxima={near_a}")
+
+    # --- Linha 3: Visibilidade Detalhada ---
+    def color_symbol(s):
+        if s == 'M' or s == 'X': return f"{BAD_COLOR}{s}{ANSI_RESET}"
+        if s == 'A': return f"{GOOD_COLOR}{s}{ANSI_RESET}"
+        if s in ('^', '>', 'v', '<'): return f"{VAL_COLOR}{s}{ANSI_RESET}"
+        return s
+        
+    visible_details = [f"({pos}, {color_symbol(v['symbol'])}, {v['relative']})" for pos, v in sorted(p['visible_items'].items())]
+    print(f"{LBL_COLOR}Visíveis detalhado:{ANSI_RESET} [{', '.join(visible_details)}]")
+
+    # --- Linha 4: No Chão ---
+    on_a = color_bool(p['on_apple'])
+    on_m = color_bool(p['on_monster'], is_good=False)
+    on_p = color_bool(p['on_pit'], is_good=False)
+    print(f"{LBL_COLOR}No chão:{ANSI_RESET} maçã={on_a} monstro={on_m} poço={on_p}")
+
+    # --- Linha 5: Inventário e Score ---
+    inventory_val = color_bool(dungeon.state['bot'].inventory.get('apple', False))
+    inventory_str = f"{LBL_COLOR}Inventário:{ANSI_RESET} {{'apple': {inventory_val}}}"
+    
+    score = dungeon.state['bot'].score
+    score_color = GOOD_COLOR if score >= 0 else BAD_COLOR
+    score_str = f"{LBL_COLOR}Score:{ANSI_RESET} {score_color}{score}{ANSI_RESET}"
+
+    apples_collected = dungeon.state['apples_collected']
+    apples_color = GOOD_COLOR if apples_collected > 0 else ANSI_WHITE
+    apples_str = f"{LBL_COLOR}Maçãs colhidas:{ANSI_RESET} {apples_color}{apples_collected}{ANSI_RESET}"
+    
+    print(f"{inventory_str} | {score_str} | {apples_str}")
 
 
 def main():
@@ -393,4 +501,4 @@ if __name__ == '__main__':
     run_tutorial(core)
     
     # Inicia a simulação principal com o cérebro pré-treinado
-    main_megaia(Dungeon, print_status, core_instance=core)
+    main_megaia(Dungeon, print_status, core_instance=core, interactive=False)
