@@ -3,6 +3,16 @@ from dataclasses import dataclass, field
 from MegaIA import MegaCore, main_megaia
 from tutorial import run_tutorial
 
+"""Ambiente de simulação da Dungeon e ponto de entrada da execução da MegaIA.
+
+Este arquivo define:
+- O mundo (Dungeon) com regras de sobrevivência e recompensa.
+- O agente físico (Bot), que só conhece ações básicas.
+- Funções de visualização para depuração em tempo real.
+
+O "cérebro" (escolha de ação e aprendizado) fica no arquivo MegaIA.py.
+"""
+
 # Configurações de cenário (ajuste aqui):
 GRID_ROWS = 4  # número de linhas do mapa
 GRID_COLS = 4  # número de colunas do mapa
@@ -113,6 +123,7 @@ class Dungeon:
         self.state = self.create_random()
 
     def _neighbors(self, pos):
+        """Gera vizinhos ortogonais válidos, excluindo células com poço."""
         r, c = pos
         for dr, dc in MOVES.values():
             nr, nc = r + dr, c + dc
@@ -121,6 +132,7 @@ class Dungeon:
                     yield (nr, nc)
 
     def _reconstruct_path(self, came_from, current):
+        """Reconstrói o caminho final do A* usando o mapa de predecessores."""
         path = [current]
         while current in came_from:
             current = came_from[current]
@@ -129,6 +141,7 @@ class Dungeon:
         return path
 
     def find_path_a_star(self, start, goal):
+        """Busca caminho curto entre dois pontos via A* com heurística Manhattan."""
         import heapq
 
         open_set = []
@@ -154,6 +167,7 @@ class Dungeon:
         return None
 
     def move_monster(self):
+        """Move cada monstro: perseguição com A* ou passo aleatório seguro."""
         if not self.monster_can_move or self.state['done']:
             return
         if not self.state['monsters']:
@@ -178,6 +192,7 @@ class Dungeon:
         self.state['monsters'] = new_positions
 
     def spawn_monsters(self, count=1):
+        """Adiciona monstros em posições vazias sem sobrepor entidades existentes."""
         occupied = {self.state['bot'].position, self.state['apple']} | self.state['pits'] | self.state['monsters']
         empty = [(r, c) for r in range(self.rows) for c in range(self.cols) if (r, c) not in occupied]
         random.shuffle(empty)
@@ -221,6 +236,7 @@ class Dungeon:
         }
 
     def choose_respawn_map(self):
+        """Resolve a política de respawn configurada para o bot."""
         if BOT_RESPAWN_MAP_POLICY == 'random':
             return 'random'
         if BOT_RESPAWN_MAP_POLICY == 'choice':
@@ -228,6 +244,7 @@ class Dungeon:
         return 'same'
 
     def random_empty_position(self):
+        """Retorna uma célula vazia; fallback para posição atual se necessário."""
         occupied = {self.state['bot'].position} | self.state['monsters'] | self.state['pits']
         if self.state['apple'] is not None:
             occupied.add(self.state['apple'])
@@ -237,6 +254,7 @@ class Dungeon:
         return random.choice(empties)
 
     def respawn_bot(self):
+        """Reposiciona o bot após morte sem perder metadados de vida/mortes."""
         policy = self.choose_respawn_map()
         if policy == 'random':
             old_deaths = self.state.get('deaths', 0)
@@ -253,6 +271,7 @@ class Dungeon:
         self.state['hunger'] = MAX_HUNGER
 
     def spawn_apple(self):
+        """Cria nova maçã em célula livre quando a anterior foi coletada."""
         occupied = {self.state['bot'].position} | self.state['monsters'] | self.state['pits']
         empty = [(r, c) for r in range(self.rows) for c in range(self.cols) if (r, c) not in occupied]
         if not empty:
@@ -260,6 +279,7 @@ class Dungeon:
         self.state['apple'] = random.choice(empty)
 
     def bot_vision(self):
+        """Calcula o campo de visão frontal curto do bot (até 2 casas)."""
         bot = self.state['bot']
         r, c = bot.position
         if bot.direction == 0:
@@ -277,6 +297,7 @@ class Dungeon:
         return visible
 
     def render(self):
+        """Renderiza o estado da dungeon em grade textual com destaque visual."""
         d = self.state
         visible = self.bot_vision()
         lines = [f'Dungeon ({ANSI_CYAN}B=bot{ANSI_RESET}, {ANSI_RED}M=monstro{ANSI_RESET}, {ANSI_GREEN}A=maçã{ANSI_RESET}, {ANSI_RED}X=poço{ANSI_RESET}, .=vazio)']
@@ -315,6 +336,7 @@ class Dungeon:
         return '\n'.join(lines)
 
     def perception(self):
+        """Monta o pacote de percepção usado pelo núcleo de decisão da IA."""
         bot = self.state['bot']
         r, c = bot.position
         visible_positions = self.bot_vision()
@@ -355,10 +377,12 @@ class Dungeon:
         return senses
 
     def step(self, action: str):
+        """Executa 1 turno completo: aplica ação, resolve riscos e retorna feedback."""
         if self.state['done']:
             return {'status': 'finished', 'reward': 0, 'info': 'Jogo encerrado'}
         bot = self.state['bot']
         reward = -1
+        # Custo por turno: o bot perde fome continuamente.
         self.state['hunger'] -= HUNGER_LOSS_PER_TURN
         if self.state['hunger'] <= 0:
             bot.alive = False
@@ -396,12 +420,15 @@ class Dungeon:
                     reward = ATTACK_PENALTY
         else:
             reward = -5
+        # O ambiente responde à ação do bot com o turno do(s) monstro(s).
         if self.monster_can_move and not self.state['done']:
             self.move_monster()
+        # Verificação de estados terminais após movimentações.
         if bot.position in self.state['monsters']:
             bot.alive = False; self.state['done'] = True; self.state['reason'] = 'monstro'; reward = -100
         elif bot.position in self.state['pits']:
             bot.alive = False; self.state['done'] = True; self.state['reason'] = 'poço'; reward = -100
+        # Se não há monstros vivos, inicia ciclo de respawn.
         if not self.state['done'] and not self.state['monsters']:
             self.state['monster_respawn_timer'] += 1
             if self.state['monster_respawn_timer'] >= MONSTER_RESPAWN_TURNS:
@@ -477,6 +504,7 @@ def print_status(dungeon):
 
 
 def main():
+    """Modo manual de jogo para testes rápidos no terminal."""
     dungeon = Dungeon(rows=GRID_ROWS, cols=GRID_COLS, num_pits=NUM_PITS)
     print('=== Dungeon com Bot (classes) ===')
     print_status(dungeon)

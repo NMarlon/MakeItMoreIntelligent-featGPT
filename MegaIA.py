@@ -1,3 +1,8 @@
+"""Núcleo cognitivo da MegaIA.
+
+Este módulo reúne memória, aprendizagem incremental e política de ação.
+"""
+
 import ast
 import json
 import os
@@ -16,9 +21,11 @@ ANSI_CYAN = '\x1b[96m'
 ANSI_WHITE = '\x1b[97m'
 
 class MegaCore:
+    """Cérebro da MegaIA: aprende, armazena e decide ações."""
     MEMORIA_FILE = "megaia_memoria.json"
 
     def __init__(self, memory_file=None):
+        """Inicializa estado e carrega memória persistida (se existir)."""
         self.memory_file = memory_file or self.MEMORIA_FILE
         self.sensory_memory = {}
         self.rules = self._default_rules()
@@ -32,6 +39,7 @@ class MegaCore:
 
     @staticmethod
     def _default_rules():
+        """Retorna as regras inferidas do mundo com estado inicial neutro."""
         return {
             "apple_always_exists": False,
             "apple_respawns": False,
@@ -43,6 +51,7 @@ class MegaCore:
 
     @staticmethod
     def _default_world_facts():
+        """Retorna estrutura base de eventos observáveis do ambiente."""
         return {
             "morreu_poco": {"count": 0, "turns": []},
             "morreu_monstro": {"count": 0, "turns": []},
@@ -52,10 +61,12 @@ class MegaCore:
 
     @staticmethod
     def _clamp_truth(value):
+        """Limita valores para evitar memórias com magnitude descontrolada."""
         return max(-200, min(200, int(value)))
 
     @staticmethod
     def _safe_int(value, default=0):
+        """Converte para int sem quebrar execução em dados inválidos."""
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -63,6 +74,7 @@ class MegaCore:
 
     @staticmethod
     def _normalize_reason(reason):
+        """Padroniza motivo de evento para facilitar aprendizado e histórico."""
         if not reason:
             return None
         txt = str(reason).strip().lower()
@@ -76,6 +88,7 @@ class MegaCore:
         return txt
 
     def _normalize_event_key(self, event_name):
+        """Padroniza nome de evento para as chaves conhecidas de world_facts."""
         if not event_name:
             return None
         txt = str(event_name).strip().lower()
@@ -95,7 +108,9 @@ class MegaCore:
         return None
 
     def _normalize_memory_key(self, raw_key):
+        """Converte chave de memória para o formato canônico (dx, dy, símbolo)."""
         cur = raw_key
+        # Alguns arquivos antigos serializaram tuplas como string; tentamos resolver.
         for _ in range(10):
             if isinstance(cur, str):
                 try:
@@ -125,10 +140,12 @@ class MegaCore:
         return None
 
     def _parse_sensory_memory(self, payload):
+        """Interpreta memória salva em diferentes formatos e consolida em dict."""
         totals = {}
         counts = {}
 
         def add_entry(key, value):
+            """Acumula entradas repetidas para fazer média robusta no final."""
             if key is None:
                 return
             v = self._safe_int(value, None)
@@ -157,6 +174,7 @@ class MegaCore:
         return merged
 
     def _serialize_sensory_memory(self):
+        """Converte memória para lista estável de registros serializáveis em JSON."""
         records = []
         for (dx, dy, symbol), value in sorted(self.sensory_memory.items()):
             records.append(
@@ -170,6 +188,7 @@ class MegaCore:
         return records
 
     def _reset_runtime_state(self):
+        """Reseta apenas estado em execução (sem apagar arquivo diretamente)."""
         self.sensory_memory = {}
         self.rules = self._default_rules()
         self.world_facts = self._default_world_facts()
@@ -180,12 +199,14 @@ class MegaCore:
         self.apples_found = 0
 
     def _carregar_memoria(self):
+        """Carrega memória do disco com validação e normalização defensiva."""
         if not os.path.exists(self.memory_file):
             return
         try:
             with open(self.memory_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
+            # A memória sensorial pode vir em formatos diferentes entre versões.
             self.sensory_memory = self._parse_sensory_memory(data.get("sensory_memory", {}))
 
             loaded_rules = data.get("rules", {})
@@ -221,6 +242,7 @@ class MegaCore:
             print(f"{ANSI_RED}Erro ao carregar memoria: {e}. Iniciando do zero.{ANSI_RESET}")
 
     def _salvar_memoria(self):
+        """Persiste estado cognitivo completo para continuidade entre execuções."""
         data = {
             "memory_format": 2,
             "sensory_memory": self._serialize_sensory_memory(),
@@ -238,6 +260,7 @@ class MegaCore:
             print(f"{ANSI_RED}Erro ao salvar memoria: {e}{ANSI_RESET}")
 
     def reset_memory(self, create_backup=True):
+        """Reseta memória com backup opcional para não perder histórico anterior."""
         backup_path = None
         if create_backup and os.path.exists(self.memory_file):
             base, ext = os.path.splitext(self.memory_file)
@@ -252,13 +275,16 @@ class MegaCore:
         return backup_path
 
     def finalizar_vida(self):
+        """Hook de finalização: salva memória ao fim de cada vida/ciclo."""
         self._salvar_memoria()
 
     def get_sensory_truth(self, relative, symbol):
+        """Consulta o valor de verdade atual para uma percepção relativa."""
         key = (int(relative[0]), int(relative[1]), str(symbol)[:1])
         return self.sensory_memory.get(key, 0)
 
     def _apply_sensory_delta(self, relative, symbol, delta):
+        """Aplica ajuste incremental e clampado em um item da memória sensorial."""
         if delta == 0:
             return
         key = (int(relative[0]), int(relative[1]), str(symbol)[:1])
@@ -266,6 +292,7 @@ class MegaCore:
         self.sensory_memory[key] = self._clamp_truth(current + int(delta))
 
     def update_sensory_truth(self, relative, symbol, reward, reason, is_mental=False):
+        """Transforma recompensa/motivo em delta de memória para um símbolo percebido."""
         reason_norm = self._normalize_reason(reason)
         delta = 0
         if reward > 0:
@@ -279,6 +306,7 @@ class MegaCore:
             print(f"  {ANSI_BLUE}(Pensamento: {symbol} em {relative} -> atrai){ANSI_RESET}")
 
     def learn_from_turn(self, p_before, action, result, p_after):
+        """Atualiza crenças e identidade com base na transição de um turno."""
         if not isinstance(p_before, dict):
             return
         if not isinstance(result, dict):
@@ -294,6 +322,7 @@ class MegaCore:
             direction = "N"
         front_rel = self._dir_vector(direction)
 
+        # Regras de aprendizado por tipo de ação: o agente ajusta memória local.
         if action == "avancar":
             if reason == "poco" or p_after.get("on_pit"):
                 self._apply_sensory_delta(front_rel, "X", -160)
@@ -328,10 +357,12 @@ class MegaCore:
             self.rules["hunger_decreases"] = True
             self._apply_sensory_delta((0, 0), ".", -60)
 
+        # Após encontrar maçã, identidade migra para perfil mais coletor.
         if self.apples_found >= 1:
             self.identity = "colecionador"
 
     def _record_event(self, event_type, data):
+        """Registra evento no timeline e atualiza frequência em world_facts."""
         normalized = self._normalize_event_key(event_type) or event_type
         self.timeline.append({"turn": self.turn, "type": normalized, "data": data})
         if normalized not in self.world_facts:
@@ -340,6 +371,7 @@ class MegaCore:
         self.world_facts[normalized]["turns"].append(self.turn)
 
     def _temporal_risk(self, event_type, window=10):
+        """Estima risco temporal recente de um evento com base em frequência/recência."""
         info = self.world_facts.get(event_type, {"turns": []})
         turns = info.get("turns", [])
         recent = [t for t in turns if self.turn - window <= t <= self.turn]
@@ -350,9 +382,11 @@ class MegaCore:
         return min(1.0, freq + recency * 0.5)
 
     def _dir_vector(self, direction):
+        """Converte direção cardinal em deslocamento relativo (dr, dc)."""
         return {"N": (-1, 0), "S": (1, 0), "E": (0, 1), "W": (0, -1)}.get(direction, (0, 1))
 
     def _rotate(self, direction, turn):
+        """Rotaciona direção 90 graus para esquerda ou direita."""
         order = ["N", "E", "S", "W"]
         idx = order.index(direction)
         if turn == "left":
@@ -360,6 +394,7 @@ class MegaCore:
         return order[(idx + 1) % 4]
 
     def _next_relative(self, act, p):
+        """Prevê a posição relativa principal associada a uma ação candidata."""
         direction = p.get("direction", "N")
         if direction not in ["N", "S", "E", "W"]:
             direction = "N"
@@ -372,13 +407,16 @@ class MegaCore:
         return (0, 0)
 
     def _safe_route_score(self, act, p, visible):
+        """Pontua segurança de rota usando memória sensorial e histórico de morte."""
         rel = self._next_relative(act, p)
         score = 0.0
+        # Verdades negativas (X/M) reduzem score; positivas (A/.) compensam.
         score += self.get_sensory_truth(rel, "X") * 2.0
         score += self.get_sensory_truth(rel, "M") * 2.0
         score += self.get_sensory_truth(rel, ".") * 0.6
         score += self.get_sensory_truth(rel, "A") * 0.8
 
+        # Risco temporal pune caminhos similares a padrões recentes de morte.
         score -= self._temporal_risk("morreu_poco") * 50
         score -= self._temporal_risk("morreu_monstro") * 40
 
@@ -389,6 +427,7 @@ class MegaCore:
         return score
 
     def _twostep_score(self, act, p):
+        """Pontuação de previsão curta (até 2 passos) para a ação candidata."""
         direction = p.get("direction", "N")
         if direction not in ["N", "S", "E", "W"]:
             direction = "N"
@@ -413,6 +452,7 @@ class MegaCore:
         return score
 
     def _action_towards_adjacent_apple(self, p, visible):
+        """Atalho reativo: prioriza maçã adjacente sem custo de busca completa."""
         direction = p.get("direction", "N")
         if direction not in ("N", "E", "S", "W"):
             direction = "N"
@@ -443,11 +483,14 @@ class MegaCore:
         return None
 
     def choose_action(self, p, bot_pos, bot_dir, dungeon):
+        """Escolhe ação combinando reflexos, exploração e simulação mental."""
         visible = p.get("visible_items", {})
 
+        # Reflexo imediato: se está em cima da maçã, pegar é prioridade absoluta.
         if p.get("on_apple"):
             return "pegar"
 
+        # Reflexo de curto alcance: alinhar para maçã adjacente.
         apple_action = self._action_towards_adjacent_apple(p, visible)
         if apple_action:
             return apple_action
@@ -455,6 +498,7 @@ class MegaCore:
         if self.apples_found >= 1:
             self.identity = "colecionador"
 
+        # Modo exploração: testa ações diversas com filtros de segurança.
         if random.random() < self.explore_chance:
             options = ["avancar", "virar_esquerda", "virar_direita"]
             if p.get("near_monster"):
@@ -463,6 +507,7 @@ class MegaCore:
                 options = [act for act in options if act != "avancar"] or ["virar_esquerda", "virar_direita"]
             return random.choice(options)
 
+        # Modo avaliação: escolhe ação com melhor score agregado.
         best_score = -10_000.0
         best_act = "avancar"
         for act in ["avancar", "virar_esquerda", "virar_direita", "pegar", "atacar"]:
@@ -477,13 +522,16 @@ class MegaCore:
         return best_act
 
     def _mental_simulate(self, act, p, visible):
+        """Simula rapidamente utilidade de uma ação com base nas crenças atuais."""
         score = 0.0
         rel = self._next_relative(act, p)
+        # Combina atração por recompensa e aversão a perigo.
         score += self.get_sensory_truth(rel, "A") * 2.5
         score += self.get_sensory_truth(rel, ".") * 0.8
         score += self.get_sensory_truth(rel, "X") * 3.0
         score += self.get_sensory_truth(rel, "M") * 2.5
 
+        # Regras descobertas ajustam o peso de certas decisões.
         if self.rules["apple_always_exists"]:
             score += 30
         if self.rules["near_pit_means_danger"] and p.get("near_pit") and act == "avancar":
@@ -495,6 +543,7 @@ class MegaCore:
                     score += 140
                     break
 
+        # Priorização fixa por tipo de ação para guiar comportamento base.
         if act == "avancar":
             score += 20
         if act == "pegar":
@@ -516,6 +565,7 @@ def main_megaia(
     reset_memory_on_start=False,
     core_instance=None,
 ):
+    """Executa treino e simulação da MegaIA, salvando memória ao final."""
     if core_instance:
         core = core_instance
         print(f"\n{ANSI_GREEN}Usando instância da MegaIA pré-treinada pelo tutorial.{ANSI_RESET}")
@@ -526,6 +576,7 @@ def main_megaia(
     
     print(f"{ANSI_MAGENTA}=== MegaIA - Treino ({num_lives} vidas rapidas) + simulacao detalhada ==={ANSI_RESET}\n")
 
+    # Fase 1: treino rápido para consolidar regras e memória sensorial.
     for vida in range(1, num_lives + 1):
         core.explore_chance = max(0.15, core.explore_chance - 0.03)
         dungeon = Dungeon()
@@ -566,6 +617,7 @@ def main_megaia(
 
     print(f"\n{ANSI_MAGENTA}Treino concluido! Rodando simulacao detalhada turno a turno...{ANSI_RESET}\n")
 
+    # Fase 2: simulação observável para inspeção do comportamento aprendido.
     cycle = 0
     total_turns = 0
     dungeon = Dungeon()
@@ -635,6 +687,7 @@ def main_megaia(
             print("Modo nao interativo: encerrando apos o ciclo de simulacao.")
             break
 
+        # Em modo interativo, o usuário decide fluxo do próximo ciclo.
         escolha = input(f"{ANSI_YELLOW}Escolha: [C]ontinuar mesmo mapa, [R]einiciar mapa automatico, [S]air: {ANSI_RESET}").strip().lower()
         if escolha in ["s", "sair", "q", "quit"]:
             print(f"{ANSI_YELLOW}Encerrando simulacao por escolha do usuario.{ANSI_RESET}")
