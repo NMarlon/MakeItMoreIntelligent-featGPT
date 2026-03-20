@@ -1,6 +1,6 @@
 - [x] COLOCAR CORES NOS PRINTS (URGENTE!), pra ficar mais claro e intuitivo de enxergar o que é o que.
 
-- [ ] (ULTRA URGENTE!!) COMENTAR TODO código (para que fique inteligível cada coisa)
+- [x] (ULTRA URGENTE!!) COMENTAR TODO código (para que fique inteligível cada coisa)
   - [ ] E Criar uma DOCUMENTAÇÃO.
 
 - [ ] ELE NÃO AGE! De forma nenhuma está agindo

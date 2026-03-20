@@ -641,7 +641,8 @@ Isso aqui já está no nível de base para criar uma IA própria de verdade.
 - Se tiver algo nesse AGENTS.md que você ache que pode ser adaptado e melhorado pra desenvolvermos esse projeto, me avise pra alterar, descrevendo e estruturando para colocar aqui.
 - No arquivo [Concepts Definitions and Micro-details.md](<AI Instructions\Concepts Definitions and Micro-details.md>) dentro da pasta AI Instructions, tem mais informações e detalhes sobre a IA e os Conceitos e Definições. Leia antes sempre que for fazer um código sobre conceitos que não conhece
    - Sugira modificações para melhorarmos o modelo comutivamente, com local linha e descrição para eu copiar e colar.
-
+- Provavelmente vamos criar várias versões e modelos de IA até achar QUAIS vamos usar oficialmente, uma para testar cada princípio.
+- Se precisar de ajuda, me avise e eu vou ajudar.
 
 
 
@@ -652,6 +653,8 @@ Isso aqui já está no nível de base para criar uma IA própria de verdade.
 
 1. Memória da IA deve ser infinita para aprender coisas infinitas (pelo menos na teoria e no princípio), mas tanto quanto nosso cérebro têm um fim, DEVE se ter meios para se otimizar e tornar cada memória mais eficiente (sem perder informações ÚTEIS).
     1. CADA memória DEVE ter: ENTRADA e SAÍDA
+    2. Assim a memória pode ser: Um processador ou modulador; ou atuador; ou retensor de representação de informação mesmo (memória propriamente dita).
+    3. Haverá memórias para funções específicas.
 2. Atenção é basicamente pensamento, aquilo que ele CONSIDERA para uma situação é sua atenção. Se ele considera X informações para ver o resultado daquilo (simular na mente (pensar/refletir/calcular etc)), essas X informações + o que ele pensa dessas coisas é atenção (se achar que essa definição ou qualquer outra possa melhorar, sugira isso). É como uma lanterna que mostra pro agente e ele vê tudo isso, então sabe como lidar com essas coisas, porque as vê. Sem atenção ele não está vendo aquilo.
 3. O MegaIA DEVE estar se alicerçando na VERDADE, então esse é um dos focos, ele discernir a verdade do erro. Então a mentira DEVE ser algo ruim para qualquer ser inteligente (afinal inteligência é luz e verdade, luz é a capacidade de se receber verdade, e verdade é conhecimento das coisas como elas eram, como são e como elas serão), também está escrito: "Conhecereis a verdade e a verdade vos libertará" (isso é a verdade), ela possibilita escolher e agir.
    1. Dentro de si; na realidade; como agir; como sentir; como ver; como pensar; etc, em todas as coisas que ele puder.
@@ -659,7 +662,6 @@ Isso aqui já está no nível de base para criar uma IA própria de verdade.
 5. Comportamento Primário (instintivo (instintos serão domados pela inteligência, são bons para começar, até começar à existir a inteligência e identidade auto-existente que irá domá-los para os fins da identidade))
    1. Ele NECESSARIMANTE DEVE ter CURIOSIDADE (e surpresa (identificar quando NÃO SABE de algo (veja #DefiniçõesDoAgente 4.))), como um sinal interno dizendo "não sei ainda", motiva à explorar o que não sabe.
         1. Como eu disse, pode ser que ele procure o que não deve, mas vai aprender com a experiência, o que vai moldar a identidade e refinando a inteligência dele, até ele aprender o que se deve ou não ser curioso (mas isso é detalhe, vai ser dado pela identidade futuramente, escrevo aqui para que você entenda isso).
-6. Homeostase é o termo pra descrever os sinais internos de equilibrio (como fome, sede, vida, dor, alegria etc).
 7. Ele PRECISA NECESSARIAMENTE OBRIGATÓRIAMENTE TER SI MESMO dentro de SI. Isso é uma peça central do sistema autônomo que aprende sozinho. Ele precisa ser capaz de enxergar à si mesmo, seus próprios pensamentos, possibilidades, desejos, escolhas etc. E ter um mapa disso, a própria mente dele (a parte que é responsável pela previsão), ele pode usar para fazer um condesado de um resultado FINAL dessas possibilidades (ex.: "se eu não fizer nada, o que vai acontecer? E se eu fizer aquilo? O que vai acontecer?", e então ele vai pegar ambas as possibilidades e ponderá-las, fazer um julgamento ou escolha etc. Vai fazer aquilo que a mente (pra categorizar, organizar, memorizar, sentir, ver, pensar, agir etc) OU ele quer fazer ou vai fazer sobre isso). (por isso também a memória #DefiniçõesDoAgente 1. é tão importante)
 8. Uma função EXTREMAMENTE SIMPLES que deve ter: Delta da realidade com a mente, constatemente, isto é, algo como "Realidade - mente" (se der "0", é porque está igual, se der "positivo", ainda tem à aprender, se der "negativo", também.). A mente vai criar um modelo da realidade (percebida, claro), e vai atualizar esse modelo, ajustando quando necessário. (Acredito que talvez algo como uma função do Erro comum possa ajudar à princípio). Isso pode se aplicar conceitualmente também (ex.: planta = planta ✅; mas samambaia != coqueiro ❌ -> (Pode relatar as diferenças (Se ele souber)) Coqueiro dá coco, samambaia não, folhas diferentes, mas ambos são plantas), isso para que ele saiba distinguir as coisas, essas mesmas características é o que faz de um coqueiro um coqueiro e a samambaia uma samambaia.
 9. O Agente DEVE ter uma forma de responder PORQUÊ ele está (ou não) fazendo o que faz ou pensa. Portanto deve ter uma "boca" que responda pra nós e uma pro jogo (se o jogo permite conversa).

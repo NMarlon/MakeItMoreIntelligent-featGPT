@@ -9,6 +9,7 @@
     - Pode se referir à um indivíduo, ou grupo de indivíduos, trazendo UM resultado final no todo. 
         - Ex.: Um indivíduo pode ter 
 3. Inteligência coletiva: A inteligência coletiva é uma forma de inteligência compartilhada que surge da colaboração, coordenação e esforços conjuntos de muitos indivíduos. O conceito baseia-se na ideia de que o conhecimento de um grupo como um todo é sempre superior à inteligência de um único indivíduo isolado
+4. Homeostase é o termo pra descrever os sinais internos de equilibrio (como fome, sede, vida, dor, alegria etc).
 
 
 # Conceitos
