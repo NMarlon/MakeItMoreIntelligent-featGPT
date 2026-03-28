@@ -102,3 +102,22 @@ Criar uma camada de consolidacao:
 3. identidade -> modulacao real da politica de escolha
 
 Isso deve aproximar mais a MegaIA da ideia de memoria viva, fractal e ligada a verdade descrita no projeto.
+
+## 2026-03-28 - Girar nao consome turno
+
+Foi implementada uma regra simples no ambiente: apenas `avancar` e `atacar` consomem turno do mundo.
+
+### O que mudou
+
+- Em `main.py`, a `Dungeon.step()` agora calcula `consumes_turn` e so reduz fome, move monstros e avanca respawn quando a acao for `avancar` ou `atacar`.
+- `virar_esquerda`, `virar_direita` e `pegar` deixaram de consumir turno do mundo.
+- Em `MegaIA.py`, os loops de simulacao agora corrigem `core.turn` para nao avancar em acoes gratuitas.
+- Em `tutorial.py`, o tutorial tambem deixou de avancar `core.turn` para acoes que nao consomem turno.
+
+### Validacao local
+
+- `python -m py_compile MegaIA.py main.py tutorial.py` passou.
+- Teste manual rapido confirmou:
+  - girar manteve a fome igual
+  - girar nao moveu monstro
+  - avancar continuou reduzindo fome normalmente

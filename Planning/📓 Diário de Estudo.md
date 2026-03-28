@@ -53,4 +53,15 @@ O modelo (a dungeon, o jogo em si) está ótimo, mas o bot, especialmente a mem�
 
 
 
+*12:28*
+Vi que MegaIA.py está MASSIVO (+1200 linhas). 
+
+Vou ter que ler isso..
+
+
+Acabei de descobrir que o megaia_memoria.json (a memória) está com +31.000 LINHAS! 💥
+
+
+
+
 ---

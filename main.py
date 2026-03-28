@@ -46,6 +46,7 @@ APPLE_HUNGER_RECOVERY = 100
 BOT_CAN_ATTACK = True  # true/false para permitir o ataque
 ATTACK_REWARD = 80
 ATTACK_PENALTY = -1
+TIME_COST_ACTIONS = {'avancar', 'atacar'}  # So essas acoes avancam o turno do mundo.
 
 # Respawn de monstro
 MONSTER_RESPAWN_TURNS = 5  # espera após morte para respawn
@@ -382,15 +383,17 @@ class Dungeon:
             return {'status': 'finished', 'reward': 0, 'info': 'Jogo encerrado'}
         bot = self.state['bot']
         reward = -1
-        # Custo por turno: o bot perde fome continuamente.
-        self.state['hunger'] -= HUNGER_LOSS_PER_TURN
-        if self.state['hunger'] <= 0:
-            bot.alive = False
-            self.state['done'] = True
-            self.state['reason'] = 'morreu_fome'
-            reward = -100
-            bot.score += reward
-            return { 'status': 'ok', 'reward': reward, 'done': self.state['done'], 'reason': self.state['reason'], 'perception': self.perception() }
+        consumes_turn = action in TIME_COST_ACTIONS
+        # Girar e pegar nao avancam o mundo; so andar e atacar consomem turno.
+        if consumes_turn:
+            self.state['hunger'] -= HUNGER_LOSS_PER_TURN
+            if self.state['hunger'] <= 0:
+                bot.alive = False
+                self.state['done'] = True
+                self.state['reason'] = 'morreu_fome'
+                reward = -100
+                bot.score += reward
+                return { 'status': 'ok', 'reward': reward, 'done': self.state['done'], 'reason': self.state['reason'], 'perception': self.perception() }
         if action == 'avancar':
             bot.move_forward(self.rows, self.cols)
         elif action == 'virar_esquerda':
@@ -420,8 +423,8 @@ class Dungeon:
                     reward = ATTACK_PENALTY
         else:
             reward = -5
-        # O ambiente responde à ação do bot com o turno do(s) monstro(s).
-        if self.monster_can_move and not self.state['done']:
+        # O ambiente so responde quando a acao realmente consome turno.
+        if consumes_turn and self.monster_can_move and not self.state['done']:
             self.move_monster()
         # Verificação de estados terminais após movimentações.
         if bot.position in self.state['monsters']:
@@ -429,7 +432,7 @@ class Dungeon:
         elif bot.position in self.state['pits']:
             bot.alive = False; self.state['done'] = True; self.state['reason'] = 'poço'; reward = -100
         # Se não há monstros vivos, inicia ciclo de respawn.
-        if not self.state['done'] and not self.state['monsters']:
+        if consumes_turn and not self.state['done'] and not self.state['monsters']:
             self.state['monster_respawn_timer'] += 1
             if self.state['monster_respawn_timer'] >= MONSTER_RESPAWN_TURNS:
                 self.spawn_monsters(MONSTER_RESPAWN_PER_TURN); self.state['monster_respawn_timer'] = 0

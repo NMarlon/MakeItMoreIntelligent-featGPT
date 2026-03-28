@@ -1154,14 +1154,15 @@ class MegaCore:
 def main_megaia(
     Dungeon,
     print_status,
-    num_lives=30,
-    max_turns=200,
+    num_lives=80,
+    max_turns=500,
     post_train_turns=10,
     interactive=True,
     reset_memory_on_start=False,
     core_instance=None,
 ):
     """Executa treino e simulação da MegaIA, salvando memória ao final."""
+    """ISSO serve para que ele não fique morrendo à toa no "Real", somente nesse treino, será como um tutorial"""
     if core_instance:
         core = core_instance
         print(f"\n{ANSI_GREEN}Usando instância da MegaIA pré-treinada pelo tutorial.{ANSI_RESET}")
@@ -1190,6 +1191,8 @@ def main_megaia(
                 dungeon,
             )
             result = dungeon.step(action)
+            if action not in ("avancar", "atacar"):
+                core.turn -= 1
             p_after = result.get("perception") if isinstance(result, dict) else None
 
             reason = core._normalize_reason(result.get("reason")) if isinstance(result, dict) else None
@@ -1242,6 +1245,8 @@ def main_megaia(
             print_status(dungeon)
 
             result = dungeon.step(action)
+            if action not in ("avancar", "atacar"):
+                core.turn -= 1
             p_after = result.get("perception") if isinstance(result, dict) else None
             reason = core._normalize_reason(result.get("reason")) if isinstance(result, dict) else None
             if reason:

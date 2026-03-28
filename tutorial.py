@@ -95,4 +95,5 @@ def ensinar_cenario(core: MegaCore, cenario: dict):
             core._record_event(f"morreu_{reason}", {"position": p_inicial.get("position"), "turn": core.turn})
             print(f"  {ANSI_RED}MegaIA sentiu uma punição (instinto 'não morrer' de '{reason}' reforçado).{ANSI_RESET}")
 
-    core.turn += 1
+    if acao in ('avancar', 'atacar'):
+        core.turn += 1
