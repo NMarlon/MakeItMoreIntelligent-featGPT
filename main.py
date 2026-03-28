@@ -35,24 +35,24 @@ ANSI_WHITE = '\x1b[97m'
 
 # Configurações do monstro
 MONSTER_CAN_MOVE = True  # true/false para controlar se o monstro se move
-MONSTER_ASTAR_PROB = 0.3  # probabilidade de usar A* para seguir o bot (0.0 a 1.0)
+MONSTER_ASTAR_PROB = 0.05  # probabilidade de usar A* para seguir o bot (0.0 a 1.0)
 
 # Fome (valores ajustáveis)
 MAX_HUNGER = 250
 HUNGER_LOSS_PER_TURN = 1
-APPLE_HUNGER_RECOVERY = 150
+APPLE_HUNGER_RECOVERY = 100
 
 # Ataque do bot
 BOT_CAN_ATTACK = True  # true/false para permitir o ataque
 ATTACK_REWARD = 80
-ATTACK_PENALTY = -10
+ATTACK_PENALTY = -1
 
 # Respawn de monstro
-MONSTER_RESPAWN_TURNS = 2  # espera após morte para respawn
-MONSTER_RESPAWN_PER_TURN = 1  # quantos monstros aparecem por turno
+MONSTER_RESPAWN_TURNS = 5  # espera após morte para respawn
+MONSTER_RESPAWN_PER_TURN = 0  # quantos monstros aparecem por turno
 
 # Respawn do bot e vidas
-BOT_INITIAL_LIVES = 3  # 0 = infinitas
+BOT_INITIAL_LIVES = 10  # 0 = infinitas
 BOT_RESPAWN_MAP_POLICY = 'random'  # 'same', 'random', 'choice' (IA escolhe)
 
 
