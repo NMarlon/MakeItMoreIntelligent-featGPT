@@ -13,28 +13,27 @@ MIN_CONNECTIONS_PER_NEURON = 1
 MAX_CONNECTIONS_PER_NEURON = 3
 
 MIN_INTERVAL = 1
-MAX_INTERVAL = 150
+MAX_INTERVAL = 30
 
-A_plus = 0.012
-A_minus = 0.014
+
+# === AJUSTE IMPORTANTE PARA VER LTD (pesos negativos) ===
+A_plus = 0.0085     # Potenciação (LTP) um pouco mais fraca
+A_minus = 0.022     # Depressão (LTD) bem mais forte → agora você vai ver pesos caindo
+
 tau_plus = 20.0
 tau_minus = 20.0
 
-WIDTH, HEIGHT = 1180, 900
+WIDTH, HEIGHT = 1280, 880
 FPS = 60
 
-# Forças (mantidas boas)
 ATTRACTION = 0.0055
 REPULSION_ALL = 60000
 REPULSION_NON_CONNECTED = 150000
 
 DAMPING = 0.84
 MAX_SPEED = 5.5
+MARGIN = -250
 
-# NOVO: Bordas muito mais generosas (espaço útil maior)
-MARGIN = 0  # ← Aumentado bastante (era ~100 antes)
-
-# Cores
 BG_COLOR = (8, 8, 18)
 NEURON_PROC = (235, 235, 245)
 INPUT_COLOR = (25, 95, 255)
@@ -44,7 +43,7 @@ LINE_DEFAULT = (160, 160, 200)
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("STDP - Bordas Maiores + Zoom")
+pygame.display.set_caption("STDP - Pesos Negativos Visíveis")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("consolas", 18)
 small_font = pygame.font.SysFont("consolas", 13)
@@ -54,9 +53,8 @@ random.seed()
 G = {}
 
 for i in range(N_NEURONS):
-    # Posição inicial mais espalhada
-    angle = i * (2 * np.pi / N_NEURONS) + random.uniform(-0.9, 0.9)
-    r = 450 + random.uniform(-80, 120)   # raio inicial maior
+    angle = i * (2 * np.pi / N_NEURONS) + random.uniform(-0.8, 0.8)
+    r = 1150 + random.uniform(-80, 120)
     G[i] = {
         'pos': Vector2(WIDTH//2 + r * np.cos(angle), HEIGHT//2 + r * np.sin(angle) * 0.78),
         'vel': Vector2(0, 0),
@@ -64,7 +62,6 @@ for i in range(N_NEURONS):
         'next_input_time': -1000
     }
 
-# Conexões ajustáveis
 edges = []
 for i in range(N_NEURONS):
     possible = [j for j in range(N_NEURONS) if j != i]
@@ -75,7 +72,7 @@ for i in range(N_NEURONS):
         for t in targets:
             if G[i]['is_input'] and G[t]['is_input']:
                 continue
-            weight = random.uniform(0.35, 0.92)
+            weight = random.uniform(0.4, 0.9)
             edges.append({'from': i, 'to': t, 'weight': weight, 'last_delta': 0.0, 'flash': 0})
 
 last_spike_time = {i: -1000 for i in range(N_NEURONS)}
@@ -84,9 +81,9 @@ def stdp_delta(pre, post):
     dt = post - pre
     if dt > 0:
         return A_plus * np.exp(-dt / tau_plus)
-    return -A_minus * np.exp(dt / tau_minus)
+    else:
+        return -A_minus * np.exp(dt / tau_minus)
 
-# Zoom
 zoom = 1.0
 camera_offset = Vector2(0, 0)
 
@@ -105,14 +102,13 @@ while running:
             old_zoom = zoom
             zoom *= 1.08 if event.y > 0 else 0.93
             zoom = max(0.3, min(zoom, 5.0))
-
             mouse_pos = Vector2(pygame.mouse.get_pos())
             world_mouse = (mouse_pos - Vector2(WIDTH/2, HEIGHT/2)) / old_zoom + Vector2(WIDTH/2, HEIGHT/2)
             camera_offset = mouse_pos - (world_mouse - camera_offset) * zoom
 
     screen.fill(BG_COLOR)
 
-    # Input externo
+    # Input externo (sempre 1)
     active_pre = []
     for i in range(NUM_INPUT_NEURONS):
         if t >= G[i]['next_input_time']:
@@ -129,7 +125,7 @@ while running:
                 if random.random() < min(0.96, edge['weight'] * 0.92):
                     last_spike_time[to] = t + random.uniform(1.8, 10)
 
-    # STDP
+    # STDP - agora com LTD mais forte
     for edge in edges:
         u = edge['from']
         v = edge['to']
@@ -138,11 +134,11 @@ while running:
         if abs(pre_t - t) < 300 and abs(post_t - t) < 300:
             dw = stdp_delta(pre_t, post_t)
             if abs(dw) > 0.0003:
-                edge['weight'] = np.clip(edge['weight'] + dw, 0.05, 1.7)
+                edge['weight'] = np.clip(edge['weight'] + dw, -0.4, 1.8)   # permite negativo
                 edge['last_delta'] = dw
                 edge['flash'] = 12
 
-    # Forças
+    # Forças (mantidas)
     for i in range(N_NEURONS):
         for j in range(i + 1, N_NEURONS):
             delta = G[i]['pos'] - G[j]['pos']
@@ -171,14 +167,12 @@ while running:
         G[u]['vel'] += dir_force * 0.45
         G[v]['vel'] -= dir_force * 0.45
 
-    # Atualiza posições com bordas MUITO MAIORES
     for i in range(N_NEURONS):
         G[i]['vel'] *= DAMPING
         if G[i]['vel'].length() > MAX_SPEED:
             G[i]['vel'] = G[i]['vel'].normalize() * MAX_SPEED
         G[i]['pos'] += G[i]['vel']
 
-        # BORDAS GENEROSAS (aqui está a correção principal)
         G[i]['pos'].x = max(MARGIN, min(WIDTH - MARGIN, G[i]['pos'].x))
         G[i]['pos'].y = max(MARGIN, min(HEIGHT - MARGIN, G[i]['pos'].y))
 
@@ -201,7 +195,6 @@ while running:
         line_width = max(5, int(weight * 9 * zoom))
         pygame.draw.line(screen, color, screen_p1, screen_p2, line_width)
 
-        # Seta proporcional
         direction = (screen_p2 - screen_p1).normalize()
         arrow_size = 36 * zoom
         arrow_width = 16 * zoom
@@ -215,7 +208,6 @@ while running:
         txt = small_font.render(f"{weight:.2f}", True, (255, 255, 255))
         screen.blit(txt, mid + Vector2(-22 * zoom, -16 * zoom))
 
-    # Neurônios
     for i in range(N_NEURONS):
         p = (G[i]['pos'] - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
         is_input = G[i]['is_input']
