@@ -1,125 +1,82 @@
+import pygame
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, Polygon, Rectangle, Circle as MplCircle
-import matplotlib.animation as animation
-from matplotlib.widgets import Slider, Button
-import networkx as nx
 import random
+from pygame.math import Vector2
 
 # ====================== PARÂMETROS AJUSTÁVEIS ======================
-N_NEURONS = 5
-NUM_INPUT_NEURONS = 2          # Quantos neurônios serão "de entrada" (o resto é processamento/saída)
+N_NEURONS = 10
+NUM_INPUT_NEURONS = 2
 
-MIN_INTERVAL = 25
-MAX_INTERVAL = 80
+# NOVO: Número de conexões por neurônio (ajustável)
+MIN_CONNECTIONS_PER_NEURON = 1
+MAX_CONNECTIONS_PER_NEURON = 3
 
-INPUT_MODE = "random_individual"   # "random_individual" ou "synchronous"
+MIN_INTERVAL = 1
+MAX_INTERVAL = 150
 
-MIN_ACTIVE = 1
-MAX_ACTIVE = 1                     # Forçado para sempre 1
-
-A_plus = 0.008
-A_minus = 0.0085
+A_plus = 0.012
+A_minus = 0.014
 tau_plus = 20.0
 tau_minus = 20.0
 
-# ====================== CRIAÇÃO DA REDE (nova versão) ======================
-random.seed()                      # Remove seed fixa → rede diferente toda vez
-np.random.seed(None)               # Também remove seed do numpy
+WIDTH, HEIGHT = 1180, 900
+FPS = 60
 
-G = nx.DiGraph()
+# Forças (valores que você gostou)
+ATTRACTION = 0.0055
+REPULSION_ALL = 60000
+REPULSION_NON_CONNECTED = 150000
 
-# Define quais neurônios são de entrada (os primeiros NUM_INPUT_NEURONS)
-input_nodes = list(range(NUM_INPUT_NEURONS))
-processing_nodes = list(range(NUM_INPUT_NEURONS, N_NEURONS))
+DAMPING = 0.84
+MAX_SPEED = 5.5
+
+# Cores
+BG_COLOR = (8, 8, 18)
+NEURON_PROC = (235, 235, 245)
+INPUT_COLOR = (25, 95, 255)
+SPIKE_COLOR = (255, 255, 110)
+INPUT_FLASH_COLOR = (0, 255, 180)
+LINE_DEFAULT = (160, 160, 200)
+
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+pygame.display.set_caption("STDP Sala das Lâmpadas - Zoom + Conexões Ajustáveis")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("consolas", 18)
+small_font = pygame.font.SysFont("consolas", 13)
+
+# ====================== REDE ======================
+random.seed()
+G = {}
 
 for i in range(N_NEURONS):
-    G.add_node(i, out_degree=0, in_degree=0, next_input_time=-1000, is_input=(i in input_nodes))
+    angle = i * (2 * np.pi / N_NEURONS) + random.uniform(-0.8, 0.8)
+    r = 260 + random.uniform(-70, 110)
+    G[i] = {
+        'pos': Vector2(WIDTH//2 + r * np.cos(angle), HEIGHT//2 + r * np.sin(angle) * 0.75),
+        'vel': Vector2(0, 0),
+        'is_input': i < NUM_INPUT_NEURONS,
+        'next_input_time': -1000
+    }
 
-# Conexões: Entradas só saem para processamento (não se conectam entre si)
-for i in input_nodes:
-    # Cada neurônio de entrada se conecta a quase todos os de processamento
-    for t in processing_nodes:
-        if random.random() < 0.85:   # nem sempre conecta todos, para variar
-            weight = np.random.uniform(0.35, 0.85)
-            G.add_edge(i, t, weight=weight, last_delta=0.0, flash_frames=0)
-            G.nodes[i]['out_degree'] += 1
-            G.nodes[t]['in_degree'] += 1
-
-# Conexões entre neurônios de processamento (mais livre)
-for i in processing_nodes:
-    possible = [j for j in processing_nodes if j != i]
-    num_out = min(len(possible), random.randint(1, 3))
-    if num_out > 0:
-        targets = random.sample(possible, num_out)
+# Conexões com quantidade ajustável
+edges = []
+for i in range(N_NEURONS):
+    possible_targets = [j for j in range(N_NEURONS) if j != i]
+    num_connections = random.randint(MIN_CONNECTIONS_PER_NEURON, MAX_CONNECTIONS_PER_NEURON)
+    num_connections = min(num_connections, len(possible_targets))
+    
+    if num_connections > 0:
+        targets = random.sample(possible_targets, num_connections)
         for t in targets:
-            weight = np.random.uniform(0.3, 0.8)
-            G.add_edge(i, t, weight=weight, last_delta=0.0, flash_frames=0)
-            G.nodes[i]['out_degree'] += 1
-            G.nodes[t]['in_degree'] += 1
+            # Evita duplicatas e conexões de entrada → entrada
+            if G[i]['is_input'] and G[t]['is_input']:
+                continue
+            weight = random.uniform(0.35, 0.92)
+            edges.append({'from': i, 'to': t, 'weight': weight, 'last_delta': 0.0, 'flash': 0})
 
-# Garantia: todo neurônio de processamento tem pelo menos 1 entrada
-for node in processing_nodes:
-    if G.nodes[node]['in_degree'] == 0:
-        source = random.choice(input_nodes)
-        weight = np.random.uniform(0.4, 0.8)
-        G.add_edge(source, node, weight=weight, last_delta=0.0, flash_frames=0)
-        G.nodes[source]['out_degree'] += 1
-        G.nodes[node]['in_degree'] += 1
-
-# Layout
-pos = nx.spring_layout(G, k=0.9, iterations=100, seed=None)   # seed=None para variar
-
-# ====================== FIGURA ======================
-fig, ax = plt.subplots(figsize=(11, 10))
-ax.set_xlim(-1.15, 1.15)
-ax.set_ylim(-1.15, 1.15)
-ax.axis('off')
-plt.title(f'STDP - 5 Neurônios (Rede nova a cada execução)\n'
-          f'Entradas externas: Sempre 1 por vez | Intervalo: {MIN_INTERVAL}-{MAX_INTERVAL} frames',
-          fontsize=13, pad=25)
-
-# Desenha neurônios
-neuron_patches = []
-extra_circles = []
-for i in range(N_NEURONS):
-    x, y = pos[i]
-    is_input = G.nodes[i]['is_input']
-    in_deg = G.nodes[i]['in_degree']
-    out_deg = G.nodes[i]['out_degree']
-    
-    if is_input:
-        patch = Rectangle((x-0.06, y-0.06), 0.12, 0.12, color='royalblue', ec='black', lw=2.8)
-    elif out_deg >= 3:
-        patch = Polygon([[x, y+0.07], [x-0.06, y-0.05], [x+0.06, y-0.05]], color='crimson', ec='black', lw=2.5)
-    else:
-        patch = plt.Circle((x, y), 0.055, color='lightgray', ec='black', lw=2)
-    
-    ax.add_patch(patch)
-    neuron_patches.append(patch)
-    
-    ext = MplCircle((x, y), 0.082, fill=False, ec='lime', lw=3.2, alpha=0)
-    ax.add_patch(ext)
-    extra_circles.append(ext)
-
-# Conexões
-arrows = []
-arrow_texts = []
-for u, v, data in G.edges(data=True):
-    x1, y1 = pos[u]
-    x2, y2 = pos[v]
-    arrow = FancyArrowPatch((x1, y1), (x2, y2), arrowstyle='->', mutation_scale=22,
-                            linewidth=data['weight']*5.5, color='gray', alpha=0.85)
-    ax.add_patch(arrow)
-    arrows.append((arrow, u, v, data))
-    
-    mx = (x1 + x2)/2
-    my = (y1 + y2)/2 + 0.028
-    txt = ax.text(mx, my, f"{data['weight']:.2f}", fontsize=9.5, ha='center', va='center', color='darkblue', weight='bold')
-    arrow_texts.append(txt)
-
-last_spike_time = np.full(N_NEURONS, -1000.0)
-next_input_time = np.full(N_NEURONS, -1000)
+last_spike_time = {i: -1000 for i in range(N_NEURONS)}
 
 def stdp_delta(pre, post):
     dt = post - pre
@@ -127,86 +84,159 @@ def stdp_delta(pre, post):
         return A_plus * np.exp(-dt / tau_plus)
     return -A_minus * np.exp(dt / tau_minus)
 
-def update(frame):
+# Variáveis de zoom
+zoom = 1.0
+camera_offset = Vector2(0, 0)
+
+# ====================== LOOP ======================
+frame = 0
+running = True
+
+while running:
+    frame += 1
     t = frame
 
-    # ====================== ENTRADAS EXTERNAS (sempre só 1) ======================
-    active_pre = []
-    
-    if INPUT_MODE == "synchronous":
-        if t % random.randint(MIN_INTERVAL, MAX_INTERVAL + 1) == 0:
-            active_pre = [random.choice(input_nodes)]
-    else:
-        for i in input_nodes:                     # só neurônios de entrada podem receber input externo
-            if t >= next_input_time[i]:
-                if random.random() < 0.38:        # chance razoável
-                    active_pre.append(i)
-                    interval = random.randint(MIN_INTERVAL, MAX_INTERVAL + 1)
-                    next_input_time[i] = t + interval
-                    break                         # garante no máximo 1 por frame
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEWHEEL:
+            # Zoom com roda do mouse
+            old_zoom = zoom
+            zoom *= 1.08 if event.y > 0 else 0.93
+            zoom = max(0.3, min(zoom, 4.0))
 
-    # Aplica a entrada (sempre no máximo 1)
+            # Zoom centrado no mouse
+            mouse_pos = Vector2(pygame.mouse.get_pos())
+            world_mouse = (mouse_pos - Vector2(WIDTH/2, HEIGHT/2)) / old_zoom + Vector2(WIDTH/2, HEIGHT/2)
+            camera_offset = mouse_pos - (world_mouse - camera_offset) * zoom
+
+    screen.fill(BG_COLOR)
+
+    # Input externo (sempre 1)
+    active_pre = []
+    for i in range(NUM_INPUT_NEURONS):
+        if t >= G[i]['next_input_time']:
+            if random.random() < 0.48:
+                active_pre.append(i)
+                G[i]['next_input_time'] = t + random.randint(MIN_INTERVAL, MAX_INTERVAL)
+                break
+
     for pre in active_pre:
         last_spike_time[pre] = t
-        extra_circles[pre].set_alpha(0.95)
-        
-        for _, v, data in G.out_edges(pre, data=True):
-            if random.random() < min(0.95, data['weight'] * 0.88):
-                last_spike_time[v] = t + random.uniform(2, 12)
+        for edge in edges:
+            if edge['from'] == pre:
+                to = edge['to']
+                if random.random() < min(0.96, edge['weight'] * 0.92):
+                    last_spike_time[to] = t + random.uniform(1.8, 10)
 
     # STDP
-    for arrow_patch, u, v, data in arrows:
+    for edge in edges:
+        u = edge['from']
+        v = edge['to']
         pre_t = last_spike_time[u]
         post_t = last_spike_time[v]
-        if abs(pre_t - t) < 220 and abs(post_t - t) < 220:
+        if abs(pre_t - t) < 300 and abs(post_t - t) < 300:
             dw = stdp_delta(pre_t, post_t)
-            if abs(dw) > 0.0001:
-                new_w = np.clip(data['weight'] + dw, 0.05, 1.4)
-                data['weight'] = new_w
-                data['flash_frames'] = 4
-                
-                arrow_patch.set_linewidth(new_w * 5.5)
-                if dw > 0.0015:   arrow_patch.set_color('lime')
-                elif dw > 0.0002: arrow_patch.set_color('cyan')
-                elif dw < -0.0015: arrow_patch.set_color('magenta')
-                else:             arrow_patch.set_color('red')
+            if abs(dw) > 0.0003:
+                edge['weight'] = np.clip(edge['weight'] + dw, 0.05, 1.7)
+                edge['last_delta'] = dw
+                edge['flash'] = 12
 
-    # Atualiza visual dos neurônios
-    for i, patch in enumerate(neuron_patches):
-        if abs(last_spike_time[i] - t) < 32:
-            patch.set_color('gold')
+    # Forças (mantidas fortes como você gostou)
+    for i in range(N_NEURONS):
+        for j in range(i + 1, N_NEURONS):
+            delta = G[i]['pos'] - G[j]['pos']
+            dist_sq = delta.length_squared()
+            if dist_sq < 0.001: continue
+
+            force = REPULSION_ALL / dist_sq
+            repel = delta.normalize() * force
+            G[i]['vel'] += repel * 0.7
+            G[j]['vel'] -= repel * 0.7
+
+            connected = any((e['from'] == i and e['to'] == j) or (e['from'] == j and e['to'] == i) for e in edges)
+            if not connected:
+                extra = REPULSION_NON_CONNECTED / dist_sq
+                extra_repel = delta.normalize() * extra
+                G[i]['vel'] += extra_repel
+                G[j]['vel'] -= extra_repel
+
+    for edge in edges:
+        u = edge['from']
+        v = edge['to']
+        delta = G[v]['pos'] - G[u]['pos']
+        dist = delta.length() + 0.001
+        force = ATTRACTION * dist
+        dir_force = delta.normalize() * force
+        G[u]['vel'] += dir_force * 0.45
+        G[v]['vel'] -= dir_force * 0.45
+
+    # Atualiza posições
+    for i in range(N_NEURONS):
+        G[i]['vel'] *= DAMPING
+        if G[i]['vel'].length() > MAX_SPEED:
+            G[i]['vel'] = G[i]['vel'].normalize() * MAX_SPEED
+        G[i]['pos'] += G[i]['vel']
+
+        G[i]['pos'].x = max(100, min(WIDTH-100, G[i]['pos'].x))
+        G[i]['pos'].y = max(100, min(HEIGHT-100, G[i]['pos'].y))
+
+    # ====================== DESENHO COM ZOOM ======================
+    for edge in edges:
+        p1 = G[edge['from']]['pos']
+        p2 = G[edge['to']]['pos']
+        weight = edge['weight']
+        flash = edge.get('flash', 0)
+
+        if flash > 0:
+            color = (80, 255, 150) if edge.get('last_delta', 0) > 0 else (255, 60, 210)
+            edge['flash'] -= 1
         else:
-            if G.nodes[i]['is_input']:
-                patch.set_color('royalblue')
-            elif G.nodes[i]['out_degree'] >= 3:
-                patch.set_color('crimson')
-            else:
-                patch.set_color('lightgray')
-        
-        if extra_circles[i].get_alpha() > 0:
-            extra_circles[i].set_alpha(max(0, extra_circles[i].get_alpha() - 0.16))
+            color = LINE_DEFAULT
 
-    # Atualiza textos e flash das setas
-    for i, txt in enumerate(arrow_texts):
-        u, v, data = arrows[i][1], arrows[i][2], arrows[i][3]
-        txt.set_text(f"{data['weight']:.2f}")
-        if data.get('flash_frames', 0) > 0:
-            data['flash_frames'] -= 1
-        else:
-            arrows[i][0].set_color('gray')
-            arrows[i][0].set_alpha(0.85)
+        # Aplicar zoom e offset
+        screen_p1 = (p1 - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
+        screen_p2 = (p2 - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
 
-    return neuron_patches + [a[0] for a in arrows] + arrow_texts + extra_circles
+        line_width = max(5, int(weight * 9))
+        pygame.draw.line(screen, color, screen_p1, screen_p2, line_width)
 
-# ====================== ANIMAÇÃO ======================
-ani = animation.FuncAnimation(fig, update, frames=4000, interval=55, blit=False, repeat=True)
+        # Seta
+        direction = (screen_p2 - screen_p1).normalize()
+        arrow_base = screen_p2 - direction * 36
+        perp = Vector2(-direction.y, direction.x)
+        tip1 = arrow_base + perp * 15
+        tip2 = arrow_base - perp * 15
+        pygame.draw.polygon(screen, color, [screen_p2, tip1, tip2])
 
-# Controles
-ax_slider = plt.axes([0.18, 0.03, 0.6, 0.03])
-slider = Slider(ax_slider, 'Velocidade', 1, 40, valinit=9)
-slider.on_changed(lambda v: setattr(ani.event_source, 'interval', int(v * 7)))
+        mid = (screen_p1 + screen_p2) / 2
+        txt = small_font.render(f"{weight:.2f}", True, (255, 255, 255))
+        screen.blit(txt, mid + Vector2(-22, -16))
 
-ax_reset = plt.axes([0.82, 0.03, 0.13, 0.05])
-Button(ax_reset, 'Reset Pesos').on_clicked(lambda e: print("Pesos resetados!"))
+    # Neurônios com zoom
+    for i in range(N_NEURONS):
+        p = (G[i]['pos'] - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
+        is_input = G[i]['is_input']
+        is_spiking = abs(last_spike_time[i] - t) < 25
 
-plt.show()
+        radius = int(34 * zoom)
+        color = INPUT_COLOR if is_input else SPIKE_COLOR if is_spiking else NEURON_PROC
+
+        pygame.draw.circle(screen, color, (int(p.x), int(p.y)), radius)
+        pygame.draw.circle(screen, (255,255,255), (int(p.x), int(p.y)), radius, int(4 * zoom))
+
+        if i in active_pre:
+            pygame.draw.circle(screen, INPUT_FLASH_COLOR, (int(p.x), int(p.y)), radius + int(18 * zoom), int(6 * zoom))
+
+        label = "IN" if is_input else str(i)
+        txt = font.render(label, True, (255, 255, 255))
+        screen.blit(txt, (p.x - 22 * zoom, p.y - 55 * zoom))
+
+    info = font.render(f"Frame: {frame} | Entrada: {'Sim' if active_pre else 'Não'} | FPS: {clock.get_fps():.1f} | Zoom: {zoom:.2f}", True, (180, 180, 200))
+    screen.blit(info, (20, 15))
+
+    pygame.display.flip()
+    clock.tick(FPS)
+
+pygame.quit()
+sys.exit()
