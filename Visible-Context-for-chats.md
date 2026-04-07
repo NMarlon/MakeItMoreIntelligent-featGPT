@@ -1,5 +1,25 @@
 # Contexto Visivel para Continuacao
 
+## 2026-04-07 - Correcao da animacao STDP em `NeuronAdjustment_lampExample.py`
+
+Foi corrigido um erro de runtime na visualizacao da simulacao STDP em `Planning/Funcoes Detalhadas/NeuronAdjustment_lampExample.py`.
+
+### Problema observado
+
+- A animacao quebrava no primeiro frame com `AttributeError: 'FancyArrowPatch' object has no attribute 'get_color'`.
+- A causa era a tentativa de consultar `get_color()` em um `FancyArrowPatch`, mas esse patch do matplotlib aceita `set_color(...)` e nao expoe `get_color()`.
+
+### Correcao aplicada
+
+- Cada aresta passou a armazenar `flash_frames`, que controla por quantos frames a conexao fica destacada depois de um ajuste STDP.
+- O codigo deixou de depender da leitura da cor atual do patch para saber quando restaurar a aparencia neutra.
+- O reset dos pesos agora tambem restaura largura, cor, alpha e estado visual da seta, evitando divergencia entre peso real e visualizacao.
+
+### Aprendizado reaproveitavel
+
+- Em animacoes do matplotlib, especialmente com `FancyArrowPatch`, e mais seguro controlar estados visuais com variaveis proprias do modelo do que depender de getters graficos que podem nao existir ou retornar formatos diferentes.
+- Esse padrao combina com a ideia do projeto: a representacao interna deve guiar a acao/saida visual, e nao o contrario.
+
 ## 2026-03-26 - Levantamento da memoria do `MegaIA.py`
 
 Foi feito um levantamento das funcoes ligadas a memoria no arquivo `MegaIA.py`, cruzando o codigo com o arquivo `megaia_memoria.json` e com as definicoes de memoria do projeto em `AGENTS.md` e `AI Instructions/Concepts Definitions and Micro-details.md`.
