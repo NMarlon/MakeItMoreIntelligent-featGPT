@@ -6,6 +6,8 @@
 	],
 	"settings": {
 		"ghostWritersIA.completion.enabled": true,
-		"ghostWritersIA.model": "deepseek-v3"
+		"ghostWritersIA.model": "gpt-4o",
+		"ghostWritersIA.openRouterApiKey": "",
+		"ghostWritersIA.autoApply": false
 	}
 }

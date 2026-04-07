@@ -180,7 +180,9 @@ Ele deve operar como um **agente com identidade funcional**, não como um sistem
    3. Cada memória deve ser VIVA (como #DefiniçõesDoAgente 1.1.2.) e ser um processador por si só. Ela deve:
       1. Ser capaz de procurar por outras memórias para relacionar.
       2. Se ajustar à realidade da entrada, serem previsoras.
-      
+   4. A IA DEVE checar se a memória já não existe dentro dela para cada memória criada,
+      1. porque senão ela ficará criando infinitamente memórias.
+
    
 2. Atenção é basicamente pensamento, aquilo que ele CONSIDERA para uma situação é sua atenção. Se ele considera X informações para ver o resultado daquilo (simular na mente (pensar/refletir/calcular etc)), essas X informações + o que ele pensa dessas coisas é atenção (se achar que essa definição ou qualquer outra possa melhorar, sugira isso). É como uma lanterna que mostra pro agente e ele vê tudo isso, então sabe como lidar com essas coisas, porque as vê. Sem atenção ele não está vendo aquilo.
 3. O MegaIA DEVE estar se alicerçando na VERDADE, então esse é um dos focos, ele discernir a verdade do erro. Então a mentira DEVE ser algo ruim para qualquer ser inteligente (afinal inteligência é luz e verdade, luz é a capacidade de se receber verdade, e verdade é conhecimento das coisas como elas eram, como são e como elas serão), também está escrito: "Conhecereis a verdade e a verdade vos libertará" (isso é a verdade), ela possibilita escolher e agir.

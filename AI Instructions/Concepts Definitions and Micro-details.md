@@ -1,5 +1,17 @@
 *Aqui tem mais informações para poder concretizar a criação dessa IA*
 
+## Word-keys:
+- 🔍 IDEIA À EXPLORAR : Pesquise para pesquisar o que precisa ser mais aprofundado e estudado.
+- ⚠️ PROBLEMA
+- 🪧 SOLUÇÃO
+- ℹ️ DEFINIÇÃO
+- 📜 CONCEITO
+- ↔️ EXEMPLO
+- 💡IDEIA
+- 💭 PENSAMENTO
+- 🔬 DETALHE
+
+
 # Definições
 
 1. Micro-inteligência:
@@ -17,6 +29,13 @@
 1. CORE (para organização de micro-inteligências): É o conceito de se ter algum gerente central para trabalhar com várias micro-inteligências.
     - ex.: Tenho uma lata de lixo que abre quando vê que estou com lixo na mão, têm uma câmera acima que vê o que estou fazendo, a câmera se comunica com a lata de lixo, tem um CORE central que gerencia quando se deve abrir ou não, porque o CORE conhece a pessoa (e vai conhecer) e gerencia isso. Se for só a lata de lixo, ela pode ver qualquer lixo e abrir sempre, mesmo que que o usuário não queira jogar fora, o que seria meio chatinho e estranho, o CORE PODE dinamicamente deixar responsabilidades para a lixeira cuidar (porque sabe que ela pode cuidar disso e até economizar de seu processamento). Toda essa gerência e estratégia, tem que estar sendo gerenciado para UM FIM de um TODO. Assim não são só coisas soltas espalhadas fazendo coisas especificas com suas limitações, mas sim, sendo gerenciadas por algo maior que compreende mais, atingindo objetivos impossíveis do que antes sozinhos/isolados. 
     - Se o CORE é um núcleo central específico, ou um (no caso do exemplo da lata de lixo) processamento que também está na própria lata gerenciando toda cozinha, tanto faz (mas quando perder a lata, se perde o gerenciamento da cozinha toda, então só tem esse risco).
+2. Ordem do Caos. 
+    - Cheguei à conclusão que um dos passos fundamentais de qualquer civilização ou organização consciente é a ORDEM. Em um lugar onde não houver ORDEM, não haverá como ter progresso, porque a mente precisará ter a ORDEM (mesmo simbolicamente) para reter as nuances e labirintos de incontáveis funcionalidades/fatos da realidade (Da Verdade (Como conhecimento real da realidade)).
+        - sem a ORDEM, ex. simples: uma pirâmide de cabeça para baixo "V", não se sustentaria e cairia (Compare com uma pirâmide normal, Base maior, e vai afunilando pra cima, dando mais firmeza à cada tijolo até a ponta). 
+            - Super-extrapolando o exemplo: E até mesmo uma pirâmide do contrário, poderia ficar de pé com certa ORDEM, na qual o mínimo de CAOS (talvez um vento ou um inseto toque a estrutura equilibrada perfeitamente) a faria cair. Se colocassem colunas em volta da pirâmide de cabeça pra baixo, no final das contas, seria equivalente à ORDEM anterior (na ordem certa, base sustendo para não cair).
+            - O CAOS, nesse contexto, é a AUSÊNCIA de ORDEM. E têm suas consequências.
+        - Com a ORDEM é possível se edificar uma coisa sobre outra, de maneira consistente (Como a pirâmide) e até usufruir dessa ORDEM.
+        - (🔬 DETALHE) Digo Consciente, porque algumas coisas podem parecer organizadas e inteligentes (talvez por um ser exterior maior que rege aquilo) no físico e determinístico, mas não são conscientes por si mesmas (não são independentes para agirem por si).
 
 
 
