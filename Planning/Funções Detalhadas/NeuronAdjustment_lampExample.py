@@ -1,39 +1,36 @@
+# ========================================================
+# NeuronAdjustment_lampExample.py
+# ARQUIVO PRINCIPAL - Lógica da simulação
+# ========================================================
+
 import pygame
-import sys
 import numpy as np
 import random
 from pygame.math import Vector2
+import sys
 
-# ====================== PARÂMETROS AJUSTÁVEIS ======================
+# ====================== PARÂMETROS (controlados pelos sliders) ======================
 N_NEURONS = 18
 NUM_INPUT_NEURONS = 3
-
-# NOVO: Número de conexões por neurônio (ajustável)
 MIN_CONNECTIONS_PER_NEURON = 1
 MAX_CONNECTIONS_PER_NEURON = 3
-
 MIN_INTERVAL = 1
 MAX_INTERVAL = 30
 
-
-# === AJUSTE IMPORTANTE PARA VER LTD (pesos negativos) ===
-A_plus = 0.0085     # Potenciação (LTP) um pouco mais fraca
-A_minus = 0.022     # Depressão (LTD) bem mais forte → agora você vai ver pesos caindo
-
-tau_plus = 20.0
-tau_minus = 20.0
-
-WIDTH, HEIGHT = 1280, 880
-FPS = 60
+A_plus = 0.0085
+A_minus = 0.022
+tau_plus = 20.0      # ← estava faltando
+tau_minus = 20.0     # ← estava faltando
 
 ATTRACTION = 0.0055
 REPULSION_ALL = 60000
 REPULSION_NON_CONNECTED = 150000
-
 DAMPING = 0.84
 MAX_SPEED = 5.5
 MARGIN = -250
+R = 1150
 
+# Cores
 BG_COLOR = (8, 8, 18)
 NEURON_PROC = (235, 235, 245)
 INPUT_COLOR = (25, 95, 255)
@@ -41,72 +38,61 @@ SPIKE_COLOR = (255, 255, 110)
 INPUT_FLASH_COLOR = (0, 255, 180)
 LINE_DEFAULT = (160, 160, 200)
 
+# ====================== INICIALIZAÇÃO ======================
 pygame.init()
+WIDTH, HEIGHT = 1380, 920
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("STDP - Pesos Negativos Visíveis")
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("consolas", 18)
 small_font = pygame.font.SysFont("consolas", 13)
 
-# ====================== REDE ======================
-random.seed()
+zoom = 1.0
+camera_offset = Vector2(0, 0)
+
 G = {}
-
-for i in range(N_NEURONS):
-    angle = i * (2 * np.pi / N_NEURONS) + random.uniform(-0.8, 0.8)
-    r = 1150 + random.uniform(-80, 120)
-    G[i] = {
-        'pos': Vector2(WIDTH//2 + r * np.cos(angle), HEIGHT//2 + r * np.sin(angle) * 0.78),
-        'vel': Vector2(0, 0),
-        'is_input': i < NUM_INPUT_NEURONS,
-        'next_input_time': -1000
-    }
-
 edges = []
-for i in range(N_NEURONS):
-    possible = [j for j in range(N_NEURONS) if j != i]
-    num = random.randint(MIN_CONNECTIONS_PER_NEURON, MAX_CONNECTIONS_PER_NEURON)
-    num = min(num, len(possible))
-    if num > 0:
-        targets = random.sample(possible, num)
-        for t in targets:
-            if G[i]['is_input'] and G[t]['is_input']:
-                continue
-            weight = random.uniform(0.4, 0.9)
-            edges.append({'from': i, 'to': t, 'weight': weight, 'last_delta': 0.0, 'flash': 0})
-
-last_spike_time = {i: -1000 for i in range(N_NEURONS)}
+last_spike_time = {}
+active_pre = []
+frame = 0
 
 def stdp_delta(pre, post):
     dt = post - pre
     if dt > 0:
         return A_plus * np.exp(-dt / tau_plus)
-    else:
-        return -A_minus * np.exp(dt / tau_minus)
+    return -A_minus * np.exp(dt / tau_minus)
 
-zoom = 1.0
-camera_offset = Vector2(0, 0)
+def reset_simulation():
+    global G, edges, last_spike_time
+    random.seed()
+    G = {}
+    for i in range(N_NEURONS):
+        angle = i * (2 * np.pi / N_NEURONS) + random.uniform(-0.9, 0.9)
+        r = R + random.uniform(-80, 120)
+        G[i] = {
+            'pos': Vector2(WIDTH//2 + r * np.cos(angle), HEIGHT//2 + r * np.sin(angle) * 0.78),
+            'vel': Vector2(0, 0),
+            'is_input': i < NUM_INPUT_NEURONS,
+            'next_input_time': -1000
+        }
 
-# ====================== LOOP ======================
-frame = 0
-running = True
+    edges = []
+    for i in range(N_NEURONS):
+        possible = [j for j in range(N_NEURONS) if j != i]
+        num = random.randint(MIN_CONNECTIONS_PER_NEURON, MAX_CONNECTIONS_PER_NEURON)
+        num = min(num, len(possible))
+        if num > 0:
+            targets = random.sample(possible, num)
+            for t in targets:
+                if G[i]['is_input'] and G[t]['is_input']:
+                    continue
+                weight = random.uniform(0.35, 0.92)
+                edges.append({'from': i, 'to': t, 'weight': weight, 'last_delta': 0.0, 'flash': 0})
 
-while running:
-    frame += 1
+    last_spike_time = {i: -1000 for i in range(N_NEURONS)}
+
+def update_simulation():
+    global active_pre
     t = frame
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEWHEEL:
-            old_zoom = zoom
-            zoom *= 1.08 if event.y > 0 else 0.93
-            zoom = max(0.3, min(zoom, 5.0))
-            mouse_pos = Vector2(pygame.mouse.get_pos())
-            world_mouse = (mouse_pos - Vector2(WIDTH/2, HEIGHT/2)) / old_zoom + Vector2(WIDTH/2, HEIGHT/2)
-            camera_offset = mouse_pos - (world_mouse - camera_offset) * zoom
-
-    screen.fill(BG_COLOR)
 
     # Input externo (sempre 1)
     active_pre = []
@@ -125,7 +111,7 @@ while running:
                 if random.random() < min(0.96, edge['weight'] * 0.92):
                     last_spike_time[to] = t + random.uniform(1.8, 10)
 
-    # STDP - agora com LTD mais forte
+    # STDP
     for edge in edges:
         u = edge['from']
         v = edge['to']
@@ -134,11 +120,11 @@ while running:
         if abs(pre_t - t) < 300 and abs(post_t - t) < 300:
             dw = stdp_delta(pre_t, post_t)
             if abs(dw) > 0.0003:
-                edge['weight'] = np.clip(edge['weight'] + dw, -0.4, 1.8)   # permite negativo
+                edge['weight'] = np.clip(edge['weight'] + dw, -0.4, 1.8)
                 edge['last_delta'] = dw
                 edge['flash'] = 12
 
-    # Forças (mantidas)
+    # Forças
     for i in range(N_NEURONS):
         for j in range(i + 1, N_NEURONS):
             delta = G[i]['pos'] - G[j]['pos']
@@ -167,6 +153,7 @@ while running:
         G[u]['vel'] += dir_force * 0.45
         G[v]['vel'] -= dir_force * 0.45
 
+    # Atualiza posições
     for i in range(N_NEURONS):
         G[i]['vel'] *= DAMPING
         if G[i]['vel'].length() > MAX_SPEED:
@@ -176,61 +163,83 @@ while running:
         G[i]['pos'].x = max(MARGIN, min(WIDTH - MARGIN, G[i]['pos'].x))
         G[i]['pos'].y = max(MARGIN, min(HEIGHT - MARGIN, G[i]['pos'].y))
 
-    # ====================== DESENHO ======================
-    for edge in edges:
-        p1 = G[edge['from']]['pos']
-        p2 = G[edge['to']]['pos']
-        weight = edge['weight']
-        flash = edge.get('flash', 0)
+    return active_pre
 
-        screen_p1 = (p1 - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
-        screen_p2 = (p2 - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
 
-        if flash > 0:
-            color = (80, 255, 150) if edge.get('last_delta', 0) > 0 else (255, 60, 210)
-            edge['flash'] -= 1
-        else:
-            color = LINE_DEFAULT
+def run_simulation():
+    global frame
+    frame = 0
+    reset_simulation()
 
-        line_width = max(5, int(weight * 9 * zoom))
-        pygame.draw.line(screen, color, screen_p1, screen_p2, line_width)
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-        direction = (screen_p2 - screen_p1).normalize()
-        arrow_size = 36 * zoom
-        arrow_width = 16 * zoom
-        arrow_base = screen_p2 - direction * arrow_size
-        perp = Vector2(-direction.y, direction.x)
-        tip1 = arrow_base + perp * (arrow_width / 2)
-        tip2 = arrow_base - perp * (arrow_width / 2)
-        pygame.draw.polygon(screen, color, [screen_p2, tip1, tip2])
+        active_pre = update_simulation()
 
-        mid = (screen_p1 + screen_p2) / 2
-        txt = small_font.render(f"{weight:.2f}", True, (255, 255, 255))
-        screen.blit(txt, mid + Vector2(-22 * zoom, -16 * zoom))
+        screen.fill(BG_COLOR)
 
-    for i in range(N_NEURONS):
-        p = (G[i]['pos'] - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
-        is_input = G[i]['is_input']
-        is_spiking = abs(last_spike_time[i] - t) < 25
+        # ====================== DESENHO ======================
+        for edge in edges:
+            p1 = G[edge['from']]['pos']
+            p2 = G[edge['to']]['pos']
+            weight = edge['weight']
+            flash = edge.get('flash', 0)
 
-        radius = int(34 * zoom)
-        color = INPUT_COLOR if is_input else SPIKE_COLOR if is_spiking else NEURON_PROC
+            screen_p1 = (p1 - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
+            screen_p2 = (p2 - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
 
-        pygame.draw.circle(screen, color, (int(p.x), int(p.y)), radius)
-        pygame.draw.circle(screen, (255,255,255), (int(p.x), int(p.y)), radius, int(4 * zoom))
+            if flash > 0:
+                color = (80, 255, 150) if edge.get('last_delta', 0) > 0 else (255, 60, 210)
+                edge['flash'] -= 1
+            else:
+                color = LINE_DEFAULT
 
-        if i in active_pre:
-            pygame.draw.circle(screen, INPUT_FLASH_COLOR, (int(p.x), int(p.y)), radius + int(18 * zoom), int(6 * zoom))
+            line_width = max(5, int(weight * 9 * zoom))
+            pygame.draw.line(screen, color, screen_p1, screen_p2, line_width)
 
-        label = "IN" if is_input else str(i)
-        txt = font.render(label, True, (255, 255, 255))
-        screen.blit(txt, (p.x - 22 * zoom, p.y - 55 * zoom))
+            direction = (screen_p2 - screen_p1).normalize()
+            arrow_size = 36 * zoom
+            arrow_width = 16 * zoom
+            arrow_base = screen_p2 - direction * arrow_size
+            perp = Vector2(-direction.y, direction.x)
+            tip1 = arrow_base + perp * (arrow_width / 2)
+            tip2 = arrow_base - perp * (arrow_width / 2)
+            pygame.draw.polygon(screen, color, [screen_p2, tip1, tip2])
 
-    info = font.render(f"Frame: {frame} | Entrada: {'Sim' if active_pre else 'Não'} | FPS: {clock.get_fps():.1f} | Zoom: {zoom:.2f}", True, (180, 180, 200))
-    screen.blit(info, (20, 15))
+            mid = (screen_p1 + screen_p2) / 2
+            txt = small_font.render(f"{weight:.2f}", True, (255, 255, 255))
+            screen.blit(txt, mid + Vector2(-22 * zoom, -16 * zoom))
 
-    pygame.display.flip()
-    clock.tick(FPS)
+        for i in range(N_NEURONS):
+            p = (G[i]['pos'] - camera_offset) * zoom + Vector2(WIDTH/2, HEIGHT/2)
+            is_input = G[i]['is_input']
+            is_spiking = abs(last_spike_time[i] - frame) < 25
 
-pygame.quit()
-sys.exit()
+            radius = int(34 * zoom)
+            color = INPUT_COLOR if is_input else SPIKE_COLOR if is_spiking else NEURON_PROC
+
+            pygame.draw.circle(screen, color, (int(p.x), int(p.y)), radius)
+            pygame.draw.circle(screen, (255,255,255), (int(p.x), int(p.y)), radius, int(4 * zoom))
+
+            if i in active_pre:
+                pygame.draw.circle(screen, INPUT_FLASH_COLOR, (int(p.x), int(p.y)), radius + int(18 * zoom), int(6 * zoom))
+
+            label = "IN" if is_input else str(i)
+            txt = font.render(label, True, (255, 255, 255))
+            screen.blit(txt, (p.x - 22 * zoom, p.y - 55 * zoom))
+
+        info = font.render(f"Frame: {frame} | Entrada: {'Sim' if active_pre else 'Não'} | FPS: {clock.get_fps():.1f} | Zoom: {zoom:.2f}", True, (180, 180, 200))
+        screen.blit(info, (20, 15))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    run_simulation()
