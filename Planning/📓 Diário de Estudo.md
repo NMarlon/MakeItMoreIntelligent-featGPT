@@ -195,3 +195,19 @@ Criar uma estrutura de lógica:
 
 
 ---
+
+
+
+07/Mai/2026
+
+Agora estou deixando de lado a ideia de deixar os GPT-like tão livres para fazerem uma IA com as descrições que fui dando, eles ficaram confusos, não sabiam como aplicar os conceitos da forma que eu queria, não perguntavam (Passo importante, agora pensando eu DEVERIA colocar no prompt deles para perguntarem quaisquer dúvidas que tivessem, pra quaisquer 2 caminhos de implementação, demoraria mais, mas seria BEM mais certo)
+
+Estou reorganizando os arquivos e ARQUIVANDO quase tudo para "../Archive/Version 0.1.../" que fiz dessa forma, a IA não ficou boa, nem inteligente. As versões podem dizer sobre, precisaria ler muita coisa que os GPT só decidiram fazer assim da descrição que dei para eu entender, e quando eu entendia um o próximo GPT (saia do CODEX para GEMINI por exemplo) e REFAZIA tudo! E fui verificando e tinha memória que ia ao infinito sem qualquer propósito ou utilidade, que me lembre, batendo os 32k linhas de código de JSON em uns 15 minutos ou algo assim.
+
+
+- Agora vou tentar fazer a IA com base BIOLÓGICA. 
+  - pra essa versão, ao invés de estudar TODO o cérebro (coisa que está me consumindo MUITO MUITO tempo), vou TENTAR segregar funções para games e desafios específicos e ver se funciona melhor.
+
+Arquivo consolidado, contém TODO meus estudos de Neurologia, desde quando comecei esses estudo.
+
+

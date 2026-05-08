@@ -1,6 +1,6 @@
 ﻿import random
 from dataclasses import dataclass, field
-from MegaIA import AIAgent, DummyAI, BiologicalBrainAI, get_legacy_ai, main_megaia
+from MegaIA import MegaCore, main_megaia
 from tutorial import run_tutorial
 
 """Ambiente de simulação da Dungeon e ponto de entrada da execução da MegaIA.
@@ -384,8 +384,7 @@ class Dungeon:
         bot = self.state['bot']
         reward = -1
         consumes_turn = action in TIME_COST_ACTIONS
-        
-        # Verificar fome ANTES de executar ação
+        # Girar e pegar nao avancam o mundo; so andar e atacar consomem turno.
         if consumes_turn:
             self.state['hunger'] -= HUNGER_LOSS_PER_TURN
             if self.state['hunger'] <= 0:
@@ -395,8 +394,6 @@ class Dungeon:
                 reward = -100
                 bot.score += reward
                 return { 'status': 'ok', 'reward': reward, 'done': self.state['done'], 'reason': self.state['reason'], 'perception': self.perception() }
-        
-        # Executar ação se não morreu de fome
         if action == 'avancar':
             bot.move_forward(self.rows, self.cols)
         elif action == 'virar_esquerda':
@@ -426,23 +423,19 @@ class Dungeon:
                     reward = ATTACK_PENALTY
         else:
             reward = -5
-            
-        # O ambiente só responde quando a ação realmente consome turno.
+        # O ambiente so responde quando a acao realmente consome turno.
         if consumes_turn and self.monster_can_move and not self.state['done']:
             self.move_monster()
-            
         # Verificação de estados terminais após movimentações.
         if bot.position in self.state['monsters']:
             bot.alive = False; self.state['done'] = True; self.state['reason'] = 'monstro'; reward = -100
         elif bot.position in self.state['pits']:
             bot.alive = False; self.state['done'] = True; self.state['reason'] = 'poço'; reward = -100
-            
         # Se não há monstros vivos, inicia ciclo de respawn.
         if consumes_turn and not self.state['done'] and not self.state['monsters']:
             self.state['monster_respawn_timer'] += 1
             if self.state['monster_respawn_timer'] >= MONSTER_RESPAWN_TURNS:
                 self.spawn_monsters(MONSTER_RESPAWN_PER_TURN); self.state['monster_respawn_timer'] = 0
-                
         bot.score += reward
         return { 'status': 'ok', 'reward': reward, 'done': self.state['done'], 'reason': self.state.get('reason'), 'perception': self.perception() }
 
@@ -532,12 +525,11 @@ def main():
 
 
 if __name__ == '__main__':
-    # Choose AI implementation
-    # Options: DummyAI(), BiologicalBrainAI(), get_legacy_ai()
-    ai_agent = DummyAI()  # Change this to test different AIs
-
-    # Run tutorial with the chosen AI
-    run_tutorial(ai_agent)
-
-    # Start main simulation with the AI
-    main_megaia(Dungeon, print_status, core_instance=ai_agent, interactive=False)
+    # Cria o cérebro da MegaIA
+    core = MegaCore()
+    
+    # Executa o pré-tutorial para ensinar o básico
+    run_tutorial(core)
+    
+    # Inicia a simulação principal com o cérebro pré-treinado
+    main_megaia(Dungeon, print_status, core_instance=core, interactive=False)

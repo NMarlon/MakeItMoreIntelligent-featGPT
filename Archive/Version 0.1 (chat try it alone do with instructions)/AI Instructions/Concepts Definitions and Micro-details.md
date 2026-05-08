@@ -11,6 +11,10 @@
 - 💭 PENSAMENTO
 - 🔬 DETALHE
 
+# Sobre
+Um pouco sobre esse arquivo é que tem MUITAS descrições conceituais, ainda precisa de planejamento. São ideias à juntar para algo final.
+
+
 
 # Definições
 
